@@ -1,0 +1,3 @@
+Used to generate fit to experimental data
+e.g.
+$ Fitter -c C_PiPlus_fit.fcl 

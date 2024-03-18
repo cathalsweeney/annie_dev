@@ -1,0 +1,40 @@
+# Makefile for ROOT CERN and MINUIT with classes defined in hola.h and hola.cpp
+
+# Compiler
+CXX = g++
+
+# Compiler flags
+CXXFLAGS = -Wall -O2
+
+# ROOT libraries
+ROOTLIBS = $(shell root-config --libs)
+
+# Include directories for ROOT
+ROOTINCS = $(shell root-config --cflags)
+
+# MINUIT libraries
+MINUITLIBS = -lMinuit
+
+# Source files
+SOURCES = RunFit.cpp KnobFitter.cpp
+
+# Header files
+HEADERS = KnobFitter.h
+
+# Object files
+OBJECTS = $(SOURCES:.cpp=.o)
+
+# Executable name
+EXECUTABLE = RunFit
+
+all: $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(ROOTINCS) -o $@ $^ $(ROOTLIBS) $(MINUITLIBS)
+
+%.o: %.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(ROOTINCS) -c -o $@ $<
+
+clean:
+	rm -f $(EXECUTABLE) $(OBJECTS)
+

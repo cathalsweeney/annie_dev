@@ -1,0 +1,12 @@
+*.pptx
+*.txt
+*.png
+*.pdf
+*~
+*.root
+.DS_Store
+lappd/triggerboard/thresholds
+*.mp4
+*#
+*.o
+*Icon\r

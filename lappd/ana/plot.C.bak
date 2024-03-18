@@ -1,0 +1,36 @@
+#include "TGraph2D.h"
+#include "TAxis.h"
+#include "TMath.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TLeaf.h"
+#include "TDatime.h"
+#include "TCanvas.h"
+#include <iostream>
+
+void plot()
+{
+
+  TFile *inFile = new TFile("Analysis.root");
+  
+  TTree *myTree;
+  myTree = (TTree*)inFile->Get("ffmytree");
+
+  int entries = myTree->GetEntries();
+
+  int NHits;
+  double StripPeak[60];
+
+  myTree->SetBranchAddress("NHits",NHits);
+  myTree->SetBranchAddress("StripPeak",StripPeak);
+
+//  for(int i=0; i<entries; i++)
+    for(int i=0; i<10; i++)
+  {
+   myTree->GetEntry(i);
+   std::cout << NHit << " " << StripPeak[2] << " " << StripPeak[3] << "\n";
+
+  }
+
+
+}
