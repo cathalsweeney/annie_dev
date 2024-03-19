@@ -9,24 +9,26 @@
 #include "TCanvas.h"
 #include <iostream>
 
-void plot_3()
+int minHeight = -20;
+
+TH1F* normalise(TH1F* hist, int integral=0)
 {
 
-  TFile *inFile = new TFile("240314_lappd39_forceTrigger_nd3p0_daczero18_dacone130_5k_Analysis.root");
-  //TFile *inFile = new TFile("240313_ForceTriggering_20mVThreshold_80k_LaserON_Analysis.root");
+  
+  if(!integral) integral = hist->Integral();
+  hist->Scale(1.0/integral);
+  return hist;
+}
 
-  double t_max = 21600;
-  //double t_max = 4000;
-  int nHist = 20;
-  double minHeight = -20.0;
-  
-  
+TH1F* makeHist(std::string inName)
+{
+
+  TFile *inFile = new TFile(inName.c_str());
+    
   TTree *myTree;
   myTree = (TTree*)inFile->Get("ffmytree");
   int nChannels = 60;
-  
-  //  myTree->Print();
- 
+   
   int NHits;
   double xperp[1];
   double xpar[1];
@@ -49,105 +51,69 @@ void plot_3()
   myTree->SetBranchAddress("pulsestrip_simp",pulsestrip_simp);
   myTree->SetBranchAddress("pulseside_simp",pulseside_simp);
 
-
-  double period = (double) t_max / nHist;    
-
-  std::vector<TH1F*> vHist;
-  for(int iHist=0; iHist<nHist; iHist++){
-    std::string name = "hist" + std::to_string(iHist);
-    TH1F *hist  = new TH1F(name.c_str(), name.c_str(), 60,0,60);
-    vHist.push_back(hist);
-  }
-
+  TH1F *hist  = new TH1F("", "", 60,0,60); 
+  
   int entries = myTree->GetEntries();
   
   for(int i=0; i<entries; i++){
 
     myTree->GetEntry(i);
-
-    
-    int iHist = std::floor(EventTime / period);
-    if(iHist >= nHist) continue;    
-      
-
+          
     for(int j=0; j<nChannels; j++){
       if(StripPeak[j] <  minHeight){
-	vHist[iHist]->Fill(j);
+	hist->Fill(j);
       }
-    }
+    }// end for(channels)    
+
+  }// end loop over events
+
+  hist->Scale(1.0/entries);
+
+  return hist;
+} // end makeHist()
+
+
+void plot_3()
+{
+
+  TH1F* hist1 = makeHist("240314_lappd39_forceTrigger_nd3p0_daczero18_dacone130_5k_Analysis.root");
+  //hist1 = normalise(hist1, 22800);
+  
+  TH1F* hist2 = makeHist("240318_s6_selfTrigger_dacZero18_dacOne130_nd3p0_laserOn_Analysis.root");
+  //hist2 = normalise(hist2, 10860);
+
+  TH1F* hist3 = makeHist("240318_s6_selfTrigger_dacZero8_dacOne130_nd3p0_laserOn_Analysis.root");
+  //hist3 = normalise(hist3, 3180);
+
+  TH1F* hist4 = makeHist("240318_s6_selfTrigger_dacZero2_dacOne130_nd3p0_laserOn_Analysis.root");
+  //hist4 = normalise(hist4, 360);
+
+  double ymax = hist4->GetBinContent(hist4->GetMaximumBin());
+  
+  hist1->SetLineColor(kBlue);
+  hist3->SetLineColor(kGreen+2);
+  hist4->SetLineColor(kRed);
+  hist4->GetYaxis()->SetRangeUser(0., 1.2*ymax);
+  hist4->GetYaxis()->SetTitle("nPeaks / Event");
+  hist4->GetXaxis()->SetTitle("Channel number");
+  hist4->SetTitle((" \"Peak\" defined as any time StripPeak < " +std::to_string(minHeight)+"mV").c_str());
+
+  TLegend* legend = new TLegend(0.7,0.7, 0.9,0.9);
+  //  legend->AddEntry(hist1, "Laser in strip 10, 18mV thresh","l");
+  legend->AddEntry(hist2, "Laser in strip 6, 18mV thresh","l");
+  legend->AddEntry(hist3, "Laser in strip 6, 8mV thresh","l");
+  legend->AddEntry(hist4, "Laser in strip 6, 2mV thresh","l");
+
     
-
-  }
-
-
-
   TCanvas* c = new TCanvas();
 
-  std::vector<int> vStrip = {4, 11, 13, 16};
-  std::map<int,TGraphErrors*> gMap;
-
-  for(int strip : vStrip){
-    TGraphErrors* g = new TGraphErrors();
-    gMap[strip] = g;
-  }
-    
-  for(int iHist=0; iHist<nHist; iHist++){
-    vHist[iHist]->GetYaxis()->SetRangeUser(0, 500);
-    std::string name = "hist" + std::to_string(iHist) + ".png";
-    vHist[iHist]->Draw("HIST");
-    c->SaveAs(name.c_str());
-
-
-    for(int strip : vStrip){    
-      double val = vHist[iHist]->GetBinContent(strip); 
-      double rate = val / period;
-      double rate_err = rate / sqrt(val);
-      double t = (iHist + 0.5)*period;
-      double t_err = 0.5*period;
-      gMap[strip]->SetPoint(iHist, t, rate);
-      gMap[strip]->SetPointError(iHist, t_err, rate_err);    
-
-      //      if(strip == 11) std::cout << rate << "\n";
-    }
-    
-  }
-
-  //  gMap[4]->GetYaxis()->SetRangeUser(0.01, 15.0);
-    gMap[4]->GetYaxis()->SetRangeUser(0., 0.4);
-    
-  gMap[4]->SetLineColor(kRed);
-  gMap[11]->SetLineColor(kBlue);
-  gMap[13]->SetLineColor(kBlack);
-  gMap[16]->SetLineColor(kGreen+2);
-			 
-  gMap[4]->Draw("APL");
-  gMap[11]->Draw("PL SAME");
-  gMap[13]->Draw("PL SAME");
-  gMap[16]->Draw("PL SAME");  
-  //  c->SetLogy();
-  c->SaveAs("graph.png");
-
-
+  //  hist1->Draw("HIST");
+  hist4->Draw("HIST");
+  hist2->Draw("SAME HIST");
+  hist3->Draw("SAME HIST");
+  legend->Draw("SAME");
   
-//  myHisto_1->GetYaxis()->SetRangeUser(0, 2000);
-//  myHisto_2->GetYaxis()->SetRangeUser(0, 2000);
-//
-//  
-//  //  myHisto_1->GetYaxis()->SetRangeUser(0, 900);
-//  //  myHisto_2->GetYaxis()->SetRangeUser(0, 900);
-//  myHisto_3->GetYaxis()->SetRangeUser(0, 900);
-//  myHisto_4->GetYaxis()->SetRangeUser(0, 900);
-//  
-//  myHisto_1->Draw("HIST");
-//  c->SaveAs("hist1.png");
-//  
-//  myHisto_2->Draw("HIST");
-//  c->SaveAs("hist2.png");
-//  
-//  myHisto_3->Draw("HIST");
-//  c->SaveAs("hist3.png");
-//  
-//  myHisto_4->Draw("HIST");
-//  c->SaveAs("hist4.png");
+  c->SaveAs("hist.png");
+
 }
 
