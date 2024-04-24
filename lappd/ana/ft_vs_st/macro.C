@@ -142,6 +142,12 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
 //  if(runtime < 0) abort();
 //  
 //  for(TH1F* hist : vHist) hist->Scale(1.0/runtime);
+
+  int integral = 0;
+  for(TH1F* hist : vHist) integral += hist->Integral();
+  for(TH1F* hist : vHist) hist->Scale(1./integral);
+
+  
   
   return vHist;
 } // end makeHist()
@@ -156,8 +162,9 @@ void macro()
     
   std::map<std::string, std::vector<TH1F*> > mHist;
   mHist["ND 4.0"] = makeHist("../files/reprocessed_240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root", sigStrip);
-    mHist["ND 4.0 ST"] = makeHist("../files/reprocessed_240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root", sigStrip);
-  //    mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne24_nd4p0_2400V_s5/Analysis.root", sigStrip);
+  mHist["ND 4.0 ST"] = makeHist("../files/reprocessed_240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root", sigStrip);
+  //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne20_nd4p0_2400V_s5/Analysis.root", sigStrip);
+  //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne16_nd4p0_2400V_s5/Analysis.root", sigStrip);
     
 
 //  for(int i=0; i<4; i++){
@@ -179,7 +186,7 @@ void macro()
 
   
   TCanvas* c = new TCanvas();
-  c->SetLogy();
+  //  c->SetLogy();
 
 
   for(int i=0; i <2; i++){
@@ -197,8 +204,10 @@ void macro()
     mHist["ND 4.0 ST"][i+0]->SetLineWidth(0);
   
     THStack* hs = new THStack("hs",("Side " + std::to_string(i) + ";" + strip + ";Events").c_str());
-    hs->SetMinimum(1);
-    hs->SetMaximum(1e5);
+    hs->SetMinimum(1e-6);
+    //    hs->SetMaximum(10);
+    hs->SetMaximum(0.05);
+   
     //  hs->GetYaxis()->SetRangeUser(1, 1e5);
     hs->Add(mHist["ND 4.0 ST"][i+0]);
     hs->Add(mHist["ND 4.0 ST"][i+2]);
