@@ -10,32 +10,14 @@
 #include "TCanvas.h"
 #include <iostream>
 
-int nHist = 8;
+int nHist = 10;
+int nBins = 100;
 double thresh = 17.0;
 
-
-TH1F* DivideHist(TH1F* hNum, TH1F* hDenom)
+std::vector<TH1F*> makeHist(std::string inName, int laserStrip,  double runtime_byHand)
 {
-  TH1F* hRet = (TH1F*) hNum->Clone();
-  hRet->Clear();
-  int nBins = hNum->GetNbinsX();
-  for(int iBin=1; iBin<nBins; iBin++){
-    double cNum = hNum->GetBinContent(iBin);
-    double cDenom = hDenom->GetBinContent(iBin);
-    double cRet = 1.0;
-    if(cNum > 0 && cDenom > 0) cRet = cNum / cDenom;
-    hRet->SetBinContent(iBin, cRet);
-  }
-  return hRet;
-}
-
-std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
-{
-
-
-  
   TFile *inFile = new TFile(inName.c_str());
-    
+  
   TTree *myTree;
   myTree = (TTree*)inFile->Get("ffmytree");
   int nChannels = 60;
@@ -66,7 +48,7 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
   std::vector<TH1F*> vHist;
   for(int i=0; i <nHist; i++){
     //    TH1F *hist  = new TH1F("", "", 100,0,100);
-    TH1F *hist  = new TH1F("", "", 100,0,150); 
+    TH1F *hist  = new TH1F("", "", nBins,0,150); 
     vHist.push_back(hist);
   }
   
@@ -85,197 +67,154 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
     bool aboveThreshLaserStrip = false;
     bool aboveThreshNeighbourStrip = false;
     bool aboveThreshOtherStrip = false;
-    for(int iChan=0; iChan<60; iChan++){
-      if(iChan == 30 || iChan == 59) continue;
-
+    for(int iChan=0; iChan<30; iChan++){
       
       bool inLaserStrip = false;
       bool inNeighbourStrip = false;
-      if( iChan == laserStrip    ||
-	  iChan == (laserStrip+30)  ){
+      if( iChan == laserStrip){
 	inLaserStrip = true;
       }
-      else if( iChan == (laserStrip-1)  ||
-	       iChan == (laserStrip+1)  ||
-	       iChan == (laserStrip+29) ||
-	       iChan == (laserStrip+31)  ){
+      else if( iChan == (laserStrip-1) ||
+	       iChan == (laserStrip+1) ){
 	inNeighbourStrip = true;
       }
-
       
       if(-StripPeak[iChan] > thresh){
 	if(inLaserStrip) aboveThreshLaserStrip = true;
 	else if(inNeighbourStrip) aboveThreshNeighbourStrip = true;
 	else{
 	  aboveThreshOtherStrip = true;
-	  //	  std::cout << iChan << "\n";
 	}
       }// end if(above thresh)      
     }// end for(iChan)
 
-    if(aboveThreshLaserStrip && !aboveThreshNeighbourStrip && !aboveThreshOtherStrip){   
+
+    bool onlyLaser = aboveThreshLaserStrip && !aboveThreshNeighbourStrip && !aboveThreshOtherStrip;
+    bool onlyLaserAndNeighbour = aboveThreshLaserStrip && aboveThreshNeighbourStrip && !aboveThreshOtherStrip;
+    bool allOtherLaser = aboveThreshLaserStrip && !onlyLaser && !onlyLaserAndNeighbour;
+    
+    if(onlyLaser){   
       vHist[0]->Fill(-StripPeak[laserStrip]);
       vHist[1]->Fill(-StripPeak[laserStrip+30]);   
     }
-    else if(aboveThreshLaserStrip && aboveThreshNeighbourStrip && !aboveThreshOtherStrip){  
+    else if(onlyLaserAndNeighbour){  
       vHist[2]->Fill(-StripPeak[laserStrip]);
       vHist[3]->Fill(-StripPeak[laserStrip+30]);   
     }
-    else if(aboveThreshLaserStrip && aboveThreshNeighbourStrip && aboveThreshOtherStrip){  
+    else if(allOtherLaser){  
       vHist[4]->Fill(-StripPeak[laserStrip]);
       vHist[5]->Fill(-StripPeak[laserStrip+30]);   
     }
-    else{
+    else{// notLaser
       vHist[6]->Fill(-StripPeak[laserStrip]);
       vHist[7]->Fill(-StripPeak[laserStrip+30]);   
     }
 
-    
+    vHist[8]->Fill(-StripPeak[laserStrip]);
+    vHist[9]->Fill(-StripPeak[laserStrip+30]);
   }// end loop over events
   
-//  double runtime = -1;
-//  if(start>0 && end > 0) runtime = end - start;
-//  if(inName == "../files/reprocessed_240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root") runtime -= 1691; //awful hack
+  double runtime = -1;
+  if(start>0 && end > 0) runtime = end - start;
+  std::cout << end << " - " << start << " = " << runtime << "\n";
+  std::cout << runtime << "/" << runtime_byHand << " = " << runtime / runtime_byHand << "\n"; 
+
 //
 //  std::cout << "Runtime is " << runtime << "\n";
-//  std::cout << std::setprecision(12) << start << "\n";
+  std::cout << std::setprecision(12) << start << "\n";
 //  if(runtime < 0) abort();
 //  
-//  for(TH1F* hist : vHist) hist->Scale(1.0/runtime);
+  for(TH1F* hist : vHist) hist->Scale(1.0/runtime_byHand);
 
-  int integral = 0;
-  for(TH1F* hist : vHist) integral += hist->Integral();
-  for(TH1F* hist : vHist) hist->Scale(1./integral);
-
-  
   
   return vHist;
 } // end makeHist()
 
 
 void macro()
-{
-  //  gStyle->SetHistTopMargin(0);
-  
+{  
   int sigStrip = 5;
-  //int sigStrip = 10;
-    
+   
   std::map<std::string, std::vector<TH1F*> > mHist;
-  //  mHist["ND 4.0"] = makeHist("../files/reprocessed_240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root", sigStrip);
-  //  mHist["ND 4.0 ST"] = makeHist("../files/reprocessed_240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root", sigStrip);
-  //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne20_nd4p0_2400V_s5/Analysis.root", sigStrip);
-  //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne16_nd4p0_2400V_s5/Analysis.root", sigStrip);
-    
-  mHist["ND 4.0"] = makeHist("../files/LAPPD58/2024-05-03/forcedTrigger_2400V_nd4p0/Analysis.root", sigStrip);
-  //  mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne28_2400V_nd4p0_9hz/Analysis.root", sigStrip);
-  //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne24_2400V_nd4p0_9hz/Analysis.root", sigStrip);
-  mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne20_2400V_nd4p0_9hz/Analysis.root", sigStrip);
-
-  
-//  for(int i=0; i<4; i++){
-//    int maxBin_0 = mHist["ND 4.0 ST"][2*i]->GetMaximumBin();
-//    double scale_0 = mHist["ND 4.0 ST"][2*i]->GetBinContent(maxBin_0) / mHist["ND 4.0"][2*i]->GetBinContent(maxBin_0);
-//    int maxBin_1 = mHist["ND 4.0 ST"][2*i+1]->GetMaximumBin();
-//    double scale_1 = mHist["ND 4.0 ST"][2*i+1]->GetBinContent(maxBin_1) / mHist["ND 4.0"][2*i+1]->GetBinContent(maxBin_1);
-//    std::cout << scale_0 << ", " << scale_1 << "\n";
-//  }
-
-  std::vector<double> vScale;
-  int maxBin_0 = mHist["ND 4.0 ST"][0]->GetMaximumBin();
-  double scale_0 = mHist["ND 4.0 ST"][0]->GetBinContent(maxBin_0) / mHist["ND 4.0"][0]->GetBinContent(maxBin_0);
-  int maxBin_1 = mHist["ND 4.0 ST"][1]->GetMaximumBin();
-  double scale_1 = mHist["ND 4.0 ST"][1]->GetBinContent(maxBin_1) / mHist["ND 4.0"][1]->GetBinContent(maxBin_1);
-  std::cout << scale_0 << ", " << scale_1 << "\n";
-  vScale.push_back(scale_0);
-  vScale.push_back(scale_1);
+  mHist["ND 4.0"] = makeHist("../files/LAPPD58/2024-05-03/forcedTrigger_2400V_nd4p0/Analysis.root", sigStrip, 3200);
+  //  mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne28_2400V_nd4p0_9hz/Analysis.root", sigStrip, 16700);
+  //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne24_2400V_nd4p0_9hz/Analysis.root", sigStrip, 4700);
+  mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne20_2400V_nd4p0_9hz/Analysis.root", sigStrip, 6200);
+//  std::vector<double> vScale;
+//  int maxBin_0 = mHist["ND 4.0 ST"][0]->GetMaximumBin();
+//  double scale_0 = mHist["ND 4.0 ST"][0]->GetBinContent(maxBin_0) / mHist["ND 4.0"][0]->GetBinContent(maxBin_0);
+//  int maxBin_1 = mHist["ND 4.0 ST"][1]->GetMaximumBin();
+//  double scale_1 = mHist["ND 4.0 ST"][1]->GetBinContent(maxBin_1) / mHist["ND 4.0"][1]->GetBinContent(maxBin_1);
+//  std::cout << scale_0 << ", " << scale_1 << "\n";
+//  vScale.push_back(scale_0);
+//  vScale.push_back(scale_1);
 
   
   TCanvas* c = new TCanvas();
   c->SetLogy();
 
 
-  for(int i=0; i <2; i++){
+  for(int iSide=0; iSide <2; iSide++){
     std::string strip = "-StripPeak [mV] (strip "+std::to_string(sigStrip)+")";
 
 
-    mHist["ND 4.0 ST"][i+6]->SetFillColor(kBlue);
-    mHist["ND 4.0 ST"][i+4]->SetFillColor(kRed);
-    mHist["ND 4.0 ST"][i+2]->SetFillColor(kGreen+2);
-    mHist["ND 4.0 ST"][i+0]->SetFillColor(kMagenta);
+    mHist["ND 4.0 ST"][iSide+6]->SetFillColor(kBlue);
+    mHist["ND 4.0 ST"][iSide+4]->SetFillColor(kRed);
+    mHist["ND 4.0 ST"][iSide+2]->SetFillColor(kGreen+2);
+    mHist["ND 4.0 ST"][iSide+0]->SetFillColor(kMagenta);
   
-    mHist["ND 4.0 ST"][i+6]->SetLineWidth(0);
-    mHist["ND 4.0 ST"][i+4]->SetLineWidth(0);
-    mHist["ND 4.0 ST"][i+2]->SetLineWidth(0);
-    mHist["ND 4.0 ST"][i+0]->SetLineWidth(0);
+    mHist["ND 4.0 ST"][iSide+6]->SetLineWidth(0);
+    mHist["ND 4.0 ST"][iSide+4]->SetLineWidth(0);
+    mHist["ND 4.0 ST"][iSide+2]->SetLineWidth(0);
+    mHist["ND 4.0 ST"][iSide+0]->SetLineWidth(0);
   
-    THStack* hs = new THStack("hs",("Side " + std::to_string(i) + ";" + strip + ";Events").c_str());
-    hs->SetMinimum(1e-6);
+    THStack* hs = new THStack("hs",("Side " + std::to_string(iSide) + ";" + strip + ";Events / second [Hz]").c_str());
+    hs->SetMinimum(1e-3);
     //    hs->SetMaximum(10);
-    hs->SetMaximum(1.0);
+    hs->SetMaximum(50.0);
    
     //  hs->GetYaxis()->SetRangeUser(1, 1e5);
-    hs->Add(mHist["ND 4.0 ST"][i+0]);
-    hs->Add(mHist["ND 4.0 ST"][i+2]);
-    hs->Add(mHist["ND 4.0 ST"][i+4]);
-    hs->Add(mHist["ND 4.0 ST"][i+6]);
+    hs->Add(mHist["ND 4.0 ST"][iSide+0]);
+    hs->Add(mHist["ND 4.0 ST"][iSide+2]);
+    hs->Add(mHist["ND 4.0 ST"][iSide+4]);
+    hs->Add(mHist["ND 4.0 ST"][iSide+6]);
     hs->Draw("HIST");
   
   
   
-    TH1F* hFT = (TH1F*) mHist["ND 4.0"][i+0]->Clone();
-    hFT->Add(mHist["ND 4.0"][i+2]);
-    hFT->Add(mHist["ND 4.0"][i+4]);
-    hFT->Add(mHist["ND 4.0"][i+6]);
-    hFT->Scale(vScale[i]);
-    hFT->Draw("SAME HIST");
-  
+//    TH1F* hFT = (TH1F*) mHist["ND 4.0"][iSide+0]->Clone();
+//    hFT->Add(mHist["ND 4.0"][iSide+2]);
+//    hFT->Add(mHist["ND 4.0"][iSide+4]);
+//    hFT->Add(mHist["ND 4.0"][iSide+6]);
+//    hFT->Scale(vScale[iSide]);
+//    hFT->Draw("SAME HIST");
+
+    mHist["ND 4.0 ST"][iSide+8]->Draw("SAME HIST");
+
+    double integral_1 = mHist["ND 4.0 ST"][iSide+8]->Integral(0, nBins+1);
+    double integral_2 = 0;
+    integral_2 += mHist["ND 4.0 ST"][iSide+0]->Integral(0, nBins+1);
+    integral_2 += mHist["ND 4.0 ST"][iSide+2]->Integral(0, nBins+1);
+    integral_2 += mHist["ND 4.0 ST"][iSide+4]->Integral(0, nBins+1);
+    integral_2 += mHist["ND 4.0 ST"][iSide+6]->Integral(0, nBins+1);
+	
+
+    
+    std::cout << "integral: " << integral_1 << "/" << integral_2 << " = " << integral_1 / integral_2 << "\n";
+
+    
     TLegend* legend = new TLegend(0.5,0.6, 0.9,0.9);
-    legend->AddEntry(mHist["ND 4.0 ST"][i+0], "Self trigger: laser","f");
-    legend->AddEntry(mHist["ND 4.0 ST"][i+2], "Self trigger: laser + neighbour","f");
-    legend->AddEntry(mHist["ND 4.0 ST"][i+4], "Self trigger: laser + neighbour + other","f");
-    legend->AddEntry(mHist["ND 4.0 ST"][i+6], "Self trigger: everything else","f");
-    legend->AddEntry(hFT, ( std::to_string(vScale[i])+" x Forced trigger").c_str(),"l");
+    legend->AddEntry(mHist["ND 4.0 ST"][iSide+0], "Self trigger: only laser strip above trigger thresh","f");
+    legend->AddEntry(mHist["ND 4.0 ST"][iSide+2], "Self trigger: only laser strip and neighbour above trigger thresh","f");
+    legend->AddEntry(mHist["ND 4.0 ST"][iSide+4], "Self trigger: all other event with laser strip above thresh","f");
+    legend->AddEntry(mHist["ND 4.0 ST"][iSide+6], "Self trigger: laser strip below trigger thresh","f");
+    //    legend->AddEntry(hFT, ( std::to_string(vScale[iSide])+" x Forced trigger").c_str(),"l");
   
     legend->Draw("SAME");
     
-    c->SaveAs( (std::to_string(i)+"_stack.png").c_str() );
+    c->SaveAs( (std::to_string(iSide)+"_stack.png").c_str() );
 
   }
   
-  //  for(int i=0; i<nHist; i++){  
-//
-//    std::string strip;
-//    if(i%2 == 0) strip = "StripPeak (strip "+std::to_string(sigStrip)+", side 0)";
-//    else if(i%2 == 1) strip = "StripPeak (strip "+std::to_string(sigStrip)+", side 1)";
-//
-//    //---------------------------
-//    mHist["ND 4.0"][i]->GetYaxis()->SetRangeUser(1e-6, 10);
-//    mHist["ND 4.0"][i]->GetYaxis()->SetTitle("Events / second (Hz)");
-//    mHist["ND 4.0"][i]->GetXaxis()->SetTitle( strip.c_str());
-//    //---------------------------
-//
-//    //~~~~~~~~~~~~~~~~~~~~~~~
-////    mHist["ND 4.0"][i]->GetYaxis()->SetRangeUser(1e-4, 1e5);
-////    mHist["ND 4.0"][i]->GetYaxis()->SetTitle("Ratio to ND 4.0");
-////    mHist["ND 4.0"][i]->GetXaxis()->SetTitle( strip.c_str());
-////    mHist["ND 4.0 ST"][i] = DivideHist(mHist["ND 4.0 ST"][i], mHist["ND 4.0"][i]);
-////    mHist["ND 4.0"][i] = DivideHist(mHist["ND 4.0"][i], mHist["ND 4.0"][i]);    
-//    //~~~~~~~~~~~~~~~~~~~~~~~
-//    
-//    
-//    mHist["ND 4.0 ST"][i]->SetLineColor(kBlue);
-//	
-//    TLegend* legend = new TLegend(0.75,0.7, 0.9,0.9);
-//    legend->AddEntry(mHist["ND 4.0"][i], "ND 4.0","l");
-//    legend->AddEntry(mHist["ND 4.0 ST"][i], "ND 4.0 ST","l");
-//				    
-//    mHist["ND 4.0"][i]->Draw("HIST");
-//    mHist["ND 4.0 ST"][i]->Draw("SAME HIST");
-//    legend->Draw("SAME");
-//    c->SaveAs(("laser_"+ std::to_string(i)+".png").c_str());
-//  }
-  
-
 
 }
-
