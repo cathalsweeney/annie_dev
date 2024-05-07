@@ -98,7 +98,7 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
       else if( iChan == (laserStrip-1)  ||
 	       iChan == (laserStrip+1)  ||
 	       iChan == (laserStrip+29) ||
-	       iChan == (laserStrip+31) ){
+	       iChan == (laserStrip+31)  ){
 	inNeighbourStrip = true;
       }
 
@@ -161,12 +161,17 @@ void macro()
   //int sigStrip = 10;
     
   std::map<std::string, std::vector<TH1F*> > mHist;
-  mHist["ND 4.0"] = makeHist("../files/reprocessed_240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root", sigStrip);
-  mHist["ND 4.0 ST"] = makeHist("../files/reprocessed_240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root", sigStrip);
+  //  mHist["ND 4.0"] = makeHist("../files/reprocessed_240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root", sigStrip);
+  //  mHist["ND 4.0 ST"] = makeHist("../files/reprocessed_240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root", sigStrip);
   //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne20_nd4p0_2400V_s5/Analysis.root", sigStrip);
   //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne16_nd4p0_2400V_s5/Analysis.root", sigStrip);
     
+  mHist["ND 4.0"] = makeHist("../files/LAPPD58/2024-05-03/forcedTrigger_2400V_nd4p0/Analysis.root", sigStrip);
+  //  mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne28_2400V_nd4p0_9hz/Analysis.root", sigStrip);
+  //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne24_2400V_nd4p0_9hz/Analysis.root", sigStrip);
+  mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne20_2400V_nd4p0_9hz/Analysis.root", sigStrip);
 
+  
 //  for(int i=0; i<4; i++){
 //    int maxBin_0 = mHist["ND 4.0 ST"][2*i]->GetMaximumBin();
 //    double scale_0 = mHist["ND 4.0 ST"][2*i]->GetBinContent(maxBin_0) / mHist["ND 4.0"][2*i]->GetBinContent(maxBin_0);
@@ -186,7 +191,7 @@ void macro()
 
   
   TCanvas* c = new TCanvas();
-  //  c->SetLogy();
+  c->SetLogy();
 
 
   for(int i=0; i <2; i++){
@@ -206,7 +211,7 @@ void macro()
     THStack* hs = new THStack("hs",("Side " + std::to_string(i) + ";" + strip + ";Events").c_str());
     hs->SetMinimum(1e-6);
     //    hs->SetMaximum(10);
-    hs->SetMaximum(0.05);
+    hs->SetMaximum(1.0);
    
     //  hs->GetYaxis()->SetRangeUser(1, 1e5);
     hs->Add(mHist["ND 4.0 ST"][i+0]);
