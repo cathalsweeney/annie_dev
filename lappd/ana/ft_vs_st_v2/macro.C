@@ -110,18 +110,19 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip,  double runtime_
       vHist[7]->Fill(-StripPeak[laserStrip+30]);   
     }
 
+    // These two are just a cross-check on the integral
     vHist[8]->Fill(-StripPeak[laserStrip]);
     vHist[9]->Fill(-StripPeak[laserStrip+30]);
   }// end loop over events
   
   double runtime = -1;
   if(start>0 && end > 0) runtime = end - start;
-  std::cout << end << " - " << start << " = " << runtime << "\n";
+  //  std::cout << end << " - " << start << " = " << runtime << "\n";
   std::cout << runtime << "/" << runtime_byHand << " = " << runtime / runtime_byHand << "\n"; 
 
 //
 //  std::cout << "Runtime is " << runtime << "\n";
-  std::cout << std::setprecision(12) << start << "\n";
+//  std::cout << std::setprecision(12) << start << "\n";
 //  if(runtime < 0) abort();
 //  
   for(TH1F* hist : vHist) hist->Scale(1.0/runtime_byHand);
@@ -129,6 +130,50 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip,  double runtime_
   
   return vHist;
 } // end makeHist()
+
+std::vector<THStack*> MakeStacks(std::vector<TH1F*> vHist)
+{
+  std::vector<THStack*> vStack;
+  
+  for(int iSide=0; iSide <2; iSide++){
+    std::string strip = "-StripPeak [mV] (laser strip)";
+
+    vHist[iSide+6]->SetFillColor(kBlue);
+    vHist[iSide+4]->SetFillColor(kOrange-3);
+    vHist[iSide+2]->SetFillColor(kGreen+2);
+    vHist[iSide+0]->SetFillColor(kMagenta);
+  
+    vHist[iSide+6]->SetLineWidth(0);
+    vHist[iSide+4]->SetLineWidth(0);
+    vHist[iSide+2]->SetLineWidth(0);
+    vHist[iSide+0]->SetLineWidth(0);
+  
+    THStack* hs = new THStack("",("Side " + std::to_string(iSide) + ";" + strip + ";Events / second [Hz]").c_str());
+    hs->SetMinimum(1e-3);
+    hs->SetMaximum(2);
+    //hs->SetMaximum(50.0);
+   
+    hs->Add(vHist[iSide+6]);
+    hs->Add(vHist[iSide+2]);
+    hs->Add(vHist[iSide+4]);
+    hs->Add(vHist[iSide+0]);
+  
+    //    vHist[iSide+8]->Draw("SAME HIST");
+
+    double integral_1 = vHist[iSide+8]->Integral(0, nBins+1);
+    double integral_2 = 0;
+    integral_2 += vHist[iSide+0]->Integral(0, nBins+1);
+    integral_2 += vHist[iSide+2]->Integral(0, nBins+1);
+    integral_2 += vHist[iSide+4]->Integral(0, nBins+1);
+    integral_2 += vHist[iSide+6]->Integral(0, nBins+1);
+	  
+    std::cout << "integral: " << integral_1 << "/" << integral_2 << " = " << integral_1 / integral_2 << "\n";
+    
+
+    vStack.push_back(hs);
+  }
+  return vStack;
+}
 
 
 void macro()
@@ -154,67 +199,29 @@ void macro()
   c->SetLogy();
 
 
-  for(int iSide=0; iSide <2; iSide++){
-    std::string strip = "-StripPeak [mV] (strip "+std::to_string(sigStrip)+")";
+  std::vector<THStack*> vStack_st = MakeStacks(mHist["ND 4.0 ST"]);
+  std::vector<THStack*> vStack_ft = MakeStacks(mHist["ND 4.0"]);
 
+  vStack_st[0]->Draw("HIST");
+  c->SaveAs("foo_0.png");
+  vStack_st[1]->Draw("HIST");
+  c->SaveAs("foo_1.png");
 
-    mHist["ND 4.0 ST"][iSide+6]->SetFillColor(kBlue);
-    mHist["ND 4.0 ST"][iSide+4]->SetFillColor(kRed);
-    mHist["ND 4.0 ST"][iSide+2]->SetFillColor(kGreen+2);
-    mHist["ND 4.0 ST"][iSide+0]->SetFillColor(kMagenta);
+  vStack_ft[0]->Draw("HIST");
+  c->SaveAs("bar_0.png");
+  vStack_ft[1]->Draw("HIST");
+  c->SaveAs("bar_1.png");
+
+//    TLegend* legend = new TLegend(0.5,0.6, 0.9,0.9);
+//    legend->AddEntry(mHist["ND 4.0 ST"][iSide+0], "Self trigger: only laser strip above trigger thresh","f");
+//    legend->AddEntry(mHist["ND 4.0 ST"][iSide+2], "Self trigger: only laser strip and neighbour above trigger thresh","f");
+//    legend->AddEntry(mHist["ND 4.0 ST"][iSide+4], "Self trigger: all other event with laser strip above thresh","f");
+//    legend->AddEntry(mHist["ND 4.0 ST"][iSide+6], "Self trigger: laser strip below trigger thresh","f");
+//    //    legend->AddEntry(hFT, ( std::to_string(vScale[iSide])+" x Forced trigger").c_str(),"l");
+//  
+//    legend->Draw("SAME");
+
   
-    mHist["ND 4.0 ST"][iSide+6]->SetLineWidth(0);
-    mHist["ND 4.0 ST"][iSide+4]->SetLineWidth(0);
-    mHist["ND 4.0 ST"][iSide+2]->SetLineWidth(0);
-    mHist["ND 4.0 ST"][iSide+0]->SetLineWidth(0);
-  
-    THStack* hs = new THStack("hs",("Side " + std::to_string(iSide) + ";" + strip + ";Events / second [Hz]").c_str());
-    hs->SetMinimum(1e-3);
-    //    hs->SetMaximum(10);
-    hs->SetMaximum(50.0);
-   
-    //  hs->GetYaxis()->SetRangeUser(1, 1e5);
-    hs->Add(mHist["ND 4.0 ST"][iSide+0]);
-    hs->Add(mHist["ND 4.0 ST"][iSide+2]);
-    hs->Add(mHist["ND 4.0 ST"][iSide+4]);
-    hs->Add(mHist["ND 4.0 ST"][iSide+6]);
-    hs->Draw("HIST");
-  
-  
-  
-//    TH1F* hFT = (TH1F*) mHist["ND 4.0"][iSide+0]->Clone();
-//    hFT->Add(mHist["ND 4.0"][iSide+2]);
-//    hFT->Add(mHist["ND 4.0"][iSide+4]);
-//    hFT->Add(mHist["ND 4.0"][iSide+6]);
-//    hFT->Scale(vScale[iSide]);
-//    hFT->Draw("SAME HIST");
-
-    mHist["ND 4.0 ST"][iSide+8]->Draw("SAME HIST");
-
-    double integral_1 = mHist["ND 4.0 ST"][iSide+8]->Integral(0, nBins+1);
-    double integral_2 = 0;
-    integral_2 += mHist["ND 4.0 ST"][iSide+0]->Integral(0, nBins+1);
-    integral_2 += mHist["ND 4.0 ST"][iSide+2]->Integral(0, nBins+1);
-    integral_2 += mHist["ND 4.0 ST"][iSide+4]->Integral(0, nBins+1);
-    integral_2 += mHist["ND 4.0 ST"][iSide+6]->Integral(0, nBins+1);
-	
-
-    
-    std::cout << "integral: " << integral_1 << "/" << integral_2 << " = " << integral_1 / integral_2 << "\n";
-
-    
-    TLegend* legend = new TLegend(0.5,0.6, 0.9,0.9);
-    legend->AddEntry(mHist["ND 4.0 ST"][iSide+0], "Self trigger: only laser strip above trigger thresh","f");
-    legend->AddEntry(mHist["ND 4.0 ST"][iSide+2], "Self trigger: only laser strip and neighbour above trigger thresh","f");
-    legend->AddEntry(mHist["ND 4.0 ST"][iSide+4], "Self trigger: all other event with laser strip above thresh","f");
-    legend->AddEntry(mHist["ND 4.0 ST"][iSide+6], "Self trigger: laser strip below trigger thresh","f");
-    //    legend->AddEntry(hFT, ( std::to_string(vScale[iSide])+" x Forced trigger").c_str(),"l");
-  
-    legend->Draw("SAME");
-    
-    c->SaveAs( (std::to_string(iSide)+"_stack.png").c_str() );
-
-  }
   
 
 }
