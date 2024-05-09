@@ -48,7 +48,7 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip,  double runtime_
   std::vector<TH1F*> vHist;
   for(int i=0; i <nHist; i++){
     //    TH1F *hist  = new TH1F("", "", 100,0,100);
-    TH1F *hist  = new TH1F("", "", nBins,0,100); 
+    TH1F *hist  = new TH1F("", "", nBins,0,150); 
     vHist.push_back(hist);
   }
   
@@ -125,6 +125,7 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip,  double runtime_
 //  std::cout << std::setprecision(12) << start << "\n";
 //  if(runtime < 0) abort();
 //  
+
   for(TH1F* hist : vHist) hist->Scale(1.0/runtime_byHand);
 
   
@@ -133,7 +134,7 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip,  double runtime_
 
 //---------------------------------------------------------------------
 
-std::vector<THStack*> MakeStacks(std::vector<TH1F*> vHist, bool norm=true)
+std::vector<THStack*> MakeStacks(std::vector<TH1F*> vHist)
 {
   std::vector<THStack*> vStack;
   
@@ -162,22 +163,6 @@ std::vector<THStack*> MakeStacks(std::vector<TH1F*> vHist, bool norm=true)
     hs->Add(vHist[iSide+0]);
   
     //    vHist[iSide+8]->Draw("SAME HIST");
-
-    double integral_1 = vHist[iSide+8]->Integral(0, nBins+1);
-    double integral_2 = 0;
-    integral_2 += vHist[iSide+0]->Integral(0, nBins+1);
-    integral_2 += vHist[iSide+2]->Integral(0, nBins+1);
-    integral_2 += vHist[iSide+4]->Integral(0, nBins+1);
-    integral_2 += vHist[iSide+6]->Integral(0, nBins+1);
-	  
-    std::cout << "integral: " << integral_1 << "/" << integral_2 << " = " << integral_1 / integral_2 << "\n";
-
-    if(norm){
-      vHist[iSide+0]->Scale(1./integral_1);
-      vHist[iSide+2]->Scale(1./integral_1);
-      vHist[iSide+4]->Scale(1./integral_1);
-      vHist[iSide+6]->Scale(1./integral_1);
-    }
       
     hs->Draw();
     hs->GetYaxis()->CenterTitle(true);
@@ -193,7 +178,7 @@ std::vector<THStack*> MakeStacks(std::vector<TH1F*> vHist, bool norm=true)
 
 //---------------------------------------------------------------------
 void plot(std::vector<TH1F*> vHist_st, std::vector<TH1F*> vHist_ft,
-	  std::string longTitle, std::string shortTitle, bool norm=true)
+	  std::string longTitle, std::string shortTitle)
 {
   
   std::vector<std::string> vTitle = {
@@ -205,10 +190,41 @@ void plot(std::vector<TH1F*> vHist_st, std::vector<TH1F*> vHist_ft,
   for(TH1F* hist : vHist_ft) hist->Draw();
   for(TH1F* hist : vHist_st) hist->Draw();
 
-  std::vector<THStack*> vStack_st = MakeStacks(vHist_st);
-  std::vector<THStack*> vStack_ft = MakeStacks(vHist_ft,norm);
+
+  std::vector<TH1F*> vHist_st_norm;
+  for(TH1F* hist : vHist_st){
+    TH1F* hist_norm = (TH1F*) hist->Clone();
+    vHist_st_norm.push_back(hist_norm);
+  }
+
+  std::vector<TH1F*> vHist_ft_norm;
+  for(TH1F* hist : vHist_ft){
+    TH1F* hist_norm = (TH1F*) hist->Clone();
+    vHist_ft_norm.push_back(hist_norm);
+  }
+
   
-  double y_pad = 0.3;
+  for(int iSide=0; iSide<2; iSide++){
+    double integral_st = vHist_st[iSide+8]->Integral(0, nBins+1);  
+    vHist_st_norm[iSide+0]->Scale(1./integral_st);
+    vHist_st_norm[iSide+2]->Scale(1./integral_st);
+    vHist_st_norm[iSide+4]->Scale(1./integral_st);
+    vHist_st_norm[iSide+6]->Scale(1./integral_st);
+
+
+    double integral_ft = vHist_ft[iSide+8]->Integral(0, nBins+1);  
+    vHist_ft_norm[iSide+0]->Scale(1./integral_ft);
+    vHist_ft_norm[iSide+2]->Scale(1./integral_ft);
+    vHist_ft_norm[iSide+4]->Scale(1./integral_ft);
+    vHist_ft_norm[iSide+6]->Scale(1./integral_ft);
+    
+  }
+    
+  
+  std::vector<THStack*> vStack_st = MakeStacks(vHist_st_norm);
+  std::vector<THStack*> vStack_ft = MakeStacks(vHist_ft_norm);
+  
+  double y_pad = 0.35;
   double top_margin = 0.2;
   double bottom_margin = 0.1;
   
@@ -252,7 +268,7 @@ void plot(std::vector<TH1F*> vHist_st, std::vector<TH1F*> vHist_ft,
     p2->SetTopMargin(0.02);
     
     std::vector<int> vSpace = {39, 15, 25, 46};
-    TLegend* legend = new TLegend(0.0,0.0, 0.9,0.9);
+    TLegend* legend = new TLegend(0.0,0.0, 0.9,0.85);
     for(int iCat=0; iCat<4; iCat++){
       std::string label = "placeholder";
       if(iCat == 0) label = "Only laser strip above trigger thresh";
@@ -269,13 +285,19 @@ void plot(std::vector<TH1F*> vHist_st, std::vector<TH1F*> vHist_ft,
       
       ss << std::fixed << std::setprecision(2) << label;
       for(int i=0; i<vSpace[iCat]; i++) ss << " ";
-      ss << "ST/FT = " << integral_st << " / " << integral_ft << " = " << integral_st/integral_ft;
+      ss << "ST / FT = " << integral_st << " / " << integral_ft << " = " << integral_st/integral_ft;
   
-      legend->AddEntry(vHist_st[hist_idx], ss.str().c_str(), "f");
+      legend->AddEntry(vHist_st_norm[hist_idx], ss.str().c_str(), "f");
     }  
     legend->SetTextSize(0.10);
     legend->Draw();
-      
+    TLatex *   tRatio = new TLatex(0.71,0.85,"#bf{Ratio of event rates in Hz}");
+    tRatio->SetNDC();
+    tRatio->SetTextSize(0.11);
+    tRatio->Draw();
+
+
+    
     c->cd(0);
     TLatex *   tex = new TLatex(0.45,0.93,("Side "+ std::to_string(iSide)).c_str());
     tex->SetNDC();
@@ -295,10 +317,13 @@ void macro()
    
   std::map<std::string, std::vector<TH1F*> > mHist;
   mHist["ND 4.0"] = makeHist("../files/LAPPD58/2024-05-03/forcedTrigger_2400V_nd4p0_reprocessed/Analysis.root", sigStrip, 3200);
-  mHist["ND 4.0 ST 17_28"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne28_2400V_nd4p0_9hz_reprocessed/Analysis.root", sigStrip, 16700);
+
+  mHist["ND 4.0 ST 17_28"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne28_2400V_nd4p0_9hz_reprocessed/Analysis.root", sigStrip, 16400);
   mHist["ND 4.0 ST 17_24"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne24_2400V_nd4p0_9hz_reprocessed/Analysis.root", sigStrip, 4700);
   mHist["ND 4.0 ST 17_20"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne20_2400V_nd4p0_9hz_reprocessed/Analysis.root", sigStrip, 6200);
 
+  mHist["ND 4.0 ST 12_28"] = makeHist("../files/LAPPD58/2024-05-07/selfTrigger_dacZero12_dacOne28_2400V_nd4p0_9hz/Analysis.root", sigStrip, 9200);
+  mHist["ND 4.0 ST 22_28"] = makeHist("../files/LAPPD58/2024-05-07/selfTrigger_dacZero22_dacOne28_2400V_nd4p0_9hz/Analysis.root", sigStrip, 5350);
 
   plot(mHist["ND 4.0 ST 17_28"], mHist["ND 4.0"],
        "Self-trigger; DAC0 17mV, DAC1 28mV",
@@ -306,14 +331,19 @@ void macro()
 
   plot(mHist["ND 4.0 ST 17_24"], mHist["ND 4.0"],
        "Self-trigger; DAC0 17mV, DAC1 24mV",
-       "dZero17_dOne24", false);
-
+       "dZero17_dOne24");
   
   plot(mHist["ND 4.0 ST 17_20"], mHist["ND 4.0"],
        "Self-trigger; DAC0 17mV, DAC1 20mV",
-       "dZero17_dOne20", false);
+       "dZero17_dOne20");
 
   
+  plot(mHist["ND 4.0 ST 12_28"], mHist["ND 4.0"],
+       "Self-trigger; DAC0 12mV, DAC1 28mV",
+       "dZero12_dOne28");
    
+  plot(mHist["ND 4.0 ST 22_28"], mHist["ND 4.0"],
+       "Self-trigger; DAC0 22mV, DAC1 28mV",
+       "dZero22_dOne28");
 
 }
