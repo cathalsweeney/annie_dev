@@ -48,7 +48,7 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip,  double runtime_
   std::vector<TH1F*> vHist;
   for(int i=0; i <nHist; i++){
     //    TH1F *hist  = new TH1F("", "", 100,0,100);
-    TH1F *hist  = new TH1F("", "", nBins,0,150); 
+    TH1F *hist  = new TH1F("", "", nBins,0,100); 
     vHist.push_back(hist);
   }
   
@@ -131,6 +131,8 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip,  double runtime_
   return vHist;
 } // end makeHist()
 
+//---------------------------------------------------------------------
+
 std::vector<THStack*> MakeStacks(std::vector<TH1F*> vHist)
 {
   std::vector<THStack*> vStack;
@@ -147,8 +149,9 @@ std::vector<THStack*> MakeStacks(std::vector<TH1F*> vHist)
     vHist[iSide+4]->SetLineWidth(0);
     vHist[iSide+2]->SetLineWidth(0);
     vHist[iSide+0]->SetLineWidth(0);
-  
-    THStack* hs = new THStack("",("Side " + std::to_string(iSide) + ";" + strip + ";Events / second [Hz]").c_str());
+    
+    //    THStack* hs = new THStack("",(" ;" + strip + ";Events / second [Hz]").c_str());
+    THStack* hs = new THStack();
     hs->SetMinimum(1e-3);
     hs->SetMaximum(2);
     //hs->SetMaximum(50.0);
@@ -168,13 +171,19 @@ std::vector<THStack*> MakeStacks(std::vector<TH1F*> vHist)
     integral_2 += vHist[iSide+6]->Integral(0, nBins+1);
 	  
     std::cout << "integral: " << integral_1 << "/" << integral_2 << " = " << integral_1 / integral_2 << "\n";
-    
+
+    hs->Draw();
+    hs->GetYaxis()->CenterTitle(true);
+    hs->GetXaxis()->CenterTitle(true);
+    hs->GetYaxis()->SetTitle("Events / second [Hz]");
+    hs->GetXaxis()->SetTitle(strip.c_str());
 
     vStack.push_back(hs);
   }
   return vStack;
 }
 
+//---------------------------------------------------------------------
 
 void macro()
 {  
@@ -185,33 +194,126 @@ void macro()
   //  mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne28_2400V_nd4p0_9hz/Analysis.root", sigStrip, 16700);
   //mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne24_2400V_nd4p0_9hz/Analysis.root", sigStrip, 4700);
   mHist["ND 4.0 ST"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne20_2400V_nd4p0_9hz/Analysis.root", sigStrip, 6200);
-//  std::vector<double> vScale;
-//  int maxBin_0 = mHist["ND 4.0 ST"][0]->GetMaximumBin();
-//  double scale_0 = mHist["ND 4.0 ST"][0]->GetBinContent(maxBin_0) / mHist["ND 4.0"][0]->GetBinContent(maxBin_0);
-//  int maxBin_1 = mHist["ND 4.0 ST"][1]->GetMaximumBin();
-//  double scale_1 = mHist["ND 4.0 ST"][1]->GetBinContent(maxBin_1) / mHist["ND 4.0"][1]->GetBinContent(maxBin_1);
-//  std::cout << scale_0 << ", " << scale_1 << "\n";
-//  vScale.push_back(scale_0);
-//  vScale.push_back(scale_1);
 
-  
-  TCanvas* c = new TCanvas();
-  c->SetLogy();
+  std::vector<std::string> vTitle = {
+    "Self-trigger; DAC0 17mV, DAC1 20mV",
+    "Forced Trigger"
+  };
 
+  // I think this just initialises the hists in some way
+  for(TH1F* hist : mHist["ND 4.0"]) hist->Draw();
+  for(TH1F* hist : mHist["ND 4.0 ST"]) hist->Draw();
 
   std::vector<THStack*> vStack_st = MakeStacks(mHist["ND 4.0 ST"]);
   std::vector<THStack*> vStack_ft = MakeStacks(mHist["ND 4.0"]);
+  //  for(THStack* stack : vStack_st) stack->SetTitle(vTitle[0].c_str());
+  //  for(THStack* stack : vStack_ft) stack->SetTitle(vTitle[1].c_str()); 
+  
+  double y_pad = 0.3;
+  double top_margin = 0.2;
+  double bottom_margin = 0.1;
+  
 
-  vStack_st[0]->Draw("HIST");
-  c->SaveAs("foo_0.png");
-  vStack_st[1]->Draw("HIST");
-  c->SaveAs("foo_1.png");
+  int iSide=0;
+  TCanvas* c = new TCanvas("", "", 800, 500);
+  c->Draw();  
+  //  c->Divide(2,2);
 
-  vStack_ft[0]->Draw("HIST");
-  c->SaveAs("bar_0.png");
-  vStack_ft[1]->Draw("HIST");
-  c->SaveAs("bar_1.png");
+  TPad *p1 = new TPad("p1","p1", 0.,y_pad, 1.,1.);
+  p1->Draw();
+  p1->Divide(2,1);
+  
+  //  c->cd(1);
+  TPad *p11 = (TPad*)p1->cd(1);
+    //  TPad* p1 = (TPad*) c->cd(1);
+  p11->SetLogy();
+  p11->SetRightMargin(0.05);
+  p11->SetLeftMargin(0.10);
+  p11->SetTopMargin(top_margin);
+  p11->SetBottomMargin(bottom_margin);
+  //  vStack_st[iSide]->SetTitle("");
+  vStack_st[iSide]->Draw("HIST");
+  //  c->SaveAs("foo_0.png");
+  TLatex *   t1 = new TLatex(0.15,0.83,(vTitle[0]).c_str());
+  t1->SetNDC();
+  t1->SetTextSize(0.06);
+  t1->Draw();
 
+
+  
+  //c->cd(2);
+  TPad* p12 = (TPad*) p1->cd(2);
+  p12->SetLogy();
+  p12->SetRightMargin(0.05);
+  p12->SetLeftMargin(0.10);
+  p12->SetTopMargin(top_margin);
+  p12->SetBottomMargin(bottom_margin);
+  vStack_ft[iSide]->SetTitle("");
+  vStack_ft[iSide]->Draw("HIST");
+  TLatex *   t2 = new TLatex(0.35,0.83,(vTitle[1]).c_str());
+  t2->SetNDC();
+  t2->SetTextSize(0.06);
+  t2->Draw();
+
+
+
+
+  c->cd(0);
+  TPad* p2 = new TPad("p2","p2", 0.,0., 1.,y_pad);
+  p2->Draw();
+  p2->cd();
+  p2->SetTopMargin(0.02);
+  
+  std::vector<int> vSpace = {39, 15, 25, 46};
+  TLegend* legend = new TLegend(0.0,0.0, 0.9,0.9);
+  std::cout << "FOO A \n";
+  for(int iCat=0; iCat<4; iCat++){
+    std::string label = "placeholder";
+    if(iCat == 0) label = "Only laser strip above trigger thresh";
+    else if(iCat == 1) label = "Only laser strip and neighbour above trigger thresh";
+    else if(iCat == 2) label = "All other events with laser strip above thresh";
+    else if(iCat == 3) label = "Laser strip below trigger thresh";
+
+    std::cout << "FOO B \n";
+    
+    int hist_idx = iSide + 2*iCat;
+    double integral_ft = mHist["ND 4.0"][hist_idx]->Integral();
+    double integral_st = mHist["ND 4.0 ST"][hist_idx]->Integral();
+    std::stringstream ss;
+    //    ss << std::fixed << std::setprecision(2) << "#splitline{" << label << "}{"
+    //       << "FT/ST = " << integral_ft << "/" << integral_st << " = " << integral_ft/integral_st << "}";
+    int len = label.length();
+    int rest = 100 - len;
+    
+    ss << std::fixed << std::setprecision(2) << label;
+    for(int i=0; i<vSpace[iCat]; i++) ss << " ";
+    ss << "ST/FT = " << integral_st << " / " << integral_ft << " = " << integral_st/integral_ft;
+
+    legend->AddEntry(mHist["ND 4.0 ST"][hist_idx], ss.str().c_str(), "f");
+    std::cout << "FOO D \n";
+  }
+//  legend->AddEntry(mHist["ND 4.0 ST"][iSide+0], "Only laser strip above trigger thresh; FT/ST = " + std","f");
+//  legend->AddEntry(mHist["ND 4.0 ST"][iSide+2], "Only laser strip and neighbour above trigger thresh","f");
+//  legend->AddEntry(mHist["ND 4.0 ST"][iSide+4], "All other events with laser strip above thresh","f");
+//  legend->AddEntry(mHist["ND 4.0 ST"][iSide+6], "Laser strip below trigger thresh","f");
+
+  legend->SetTextSize(0.10);
+  legend->Draw();
+  
+  //    legend->AddEntry(hFT, ( std::to_string(vScale[iSide])+" x Forced trigger").c_str(),"l");
+//  
+//    legend->Draw("SAME");
+
+
+  c->cd(0);
+  TLatex *   tex = new TLatex(0.45,0.93,("Side "+ std::to_string(iSide)).c_str());
+  tex->SetNDC();
+  tex->SetTextSize(0.06);
+  tex->Draw();
+
+  
+  c->SaveAs("foobar.png");
+  
 //    TLegend* legend = new TLegend(0.5,0.6, 0.9,0.9);
 //    legend->AddEntry(mHist["ND 4.0 ST"][iSide+0], "Self trigger: only laser strip above trigger thresh","f");
 //    legend->AddEntry(mHist["ND 4.0 ST"][iSide+2], "Self trigger: only laser strip and neighbour above trigger thresh","f");
