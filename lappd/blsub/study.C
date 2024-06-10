@@ -4,6 +4,7 @@
 #include "TMath.h"
 #include "TFile.h"
 #include "TGraphErrors.h"
+#include "TGraph.h"
 #include "THStack.h"
 #include "TTree.h"
 #include "TLeaf.h"
@@ -39,7 +40,51 @@ void DoIt(TFile* inFile, std::string name)
 }
 
 
+std::vector<double> GetSortedVals(TFile* inFile, std::string name)
+{
+  std::vector<double> ret;
+  
+  TH2D* h2 = NULL;
+  h2 = (TH2D*) inFile->Get( ("off_beam/"+name).c_str() );
+  if(!h2){
+    std::cout << "Didn't find hist " << name << "\n";
+    exit(1);
+  }
+  
+  TH1D* h1 = (TH1D*) h2->ProjectionX("", 6,6);
+  int nVals = 256;
+  for(int i=1; i<=nVals; i++) ret.push_back(h1->GetBinContent(i)); 
 
+  std::sort(ret.begin(), ret.end());
+  
+  return ret;
+}
+
+
+void  MakePlot(TFile* inFile, std::string name)
+{
+  int nPoints = 100;
+  
+  std::vector<double> sorted = GetSortedVals(inFile, name);
+  double sum = std::reduce(sorted.begin(), sorted.end());
+  int n = sorted.size();
+
+  TGraph* graph = new TGraph();
+  for(int i=0; i<nPoints; i++){
+    if(i>0){
+      sum -= sorted.at(n-1);
+      n -= 1;
+    }
+    double bl = sum/ (double) n;
+    graph->AddPoint(i, bl);
+  }
+  double final_bl = sum / n;
+  graph->GetYaxis()->SetRangeUser(final_bl-2., final_bl+10.);
+  
+  TCanvas* c = new TCanvas();
+  graph->Draw("AP");
+  c->SaveAs( ("h1_"+name+"_bl.png").c_str() );
+}
   
 
 void study()
@@ -53,11 +98,15 @@ void study()
   }
 
 
-  int nEvt = 20;
+  int nEvt = 30;
 
   for(int iEvt=0; iEvt<nEvt; iEvt++){
     DoIt( inFile, ("event0_"+std::to_string(iEvt)).c_str() );
     DoIt( inFile, ("event1_"+std::to_string(iEvt)).c_str() );
+
+    MakePlot( inFile, ("event0_"+std::to_string(iEvt)).c_str() );
+    MakePlot( inFile, ("event1_"+std::to_string(iEvt)).c_str() );
+
   }
   
 }
