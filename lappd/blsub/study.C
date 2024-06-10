@@ -13,27 +13,52 @@
 
 //#include "../commonFunctions/myFunctions.h"
 
+void DoIt(TFile* inFile, std::string name)
+{
+  
+  TH2D* h2 = NULL;
+  h2 = (TH2D*) inFile->Get( ("off_beam/"+name).c_str() );
+  if(!h2){
+    std::cout << "Didn't find hist " << name << "\n";
+    exit(1);
+  }
+  
+  TH1D* h1 = (TH1D*) h2->ProjectionX("", 6,6);
+  h1->SetTitle(name.c_str());
+  
+  TCanvas* c = new TCanvas();
+
+  h2->GetZaxis()->SetRangeUser(-50., 250.);
+  h2->Draw("COLZ");
+  c->SaveAs( ("h2_"+name+".png").c_str() );
+
+  h1->Draw("HIST");
+  h1->GetYaxis()->SetRangeUser(-50., 250.);
+  c->SaveAs( ("h1_"+name+".png").c_str() );
+  
+}
+
+
+
+  
 
 void study()
 {
-  std::string inName = "/Users/cathalsweeney/postdoc/foo/selfTrigger_dacZero17_dacOne20_2400V_nd4p0_9hz/WaveForms_2D.root";
+  std::string inName = "/Users/cathalsweeney/postdoc/annie/lappd/blsub/files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne20_2400V_nd4p0_9hz_noBLS/WaveForms_2D.root";
   TFile* inFile = NULL;
   inFile = new TFile(inName.c_str());
   if(!inFile){
     std::cout << "Didn't find file " << inName << "\n";
     exit(1);
   }
-  TH2D* h2 = NULL;
-  h2 = (TH2D*) inFile->Get("off_beam/event0_0");
-  if(!h2){
-    std::cout << "Didn't find hist \n";
-    exit(1);
+
+
+  int nEvt = 20;
+
+  for(int iEvt=0; iEvt<nEvt; iEvt++){
+    DoIt( inFile, ("event0_"+std::to_string(iEvt)).c_str() );
+    DoIt( inFile, ("event1_"+std::to_string(iEvt)).c_str() );
   }
-
-
-  TCanvas* c = new TCanvas();
-  h2->Draw("COLZ");
-  c->SaveAs("foo.png");
   
 }
 
