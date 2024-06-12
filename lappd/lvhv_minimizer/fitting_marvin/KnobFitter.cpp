@@ -35,10 +35,10 @@ namespace g4rwgt
     fMinimizer->SetTolerance( 0.1 );
     fMinimizer->SetPrintLevel(1);
 
-    double var_min = 0.05;
-    double var_max = 100.;
-    double step = 0.1;
-    double initial = 1.0;
+    double var_min = 0.5;
+    double var_max = 5.;
+    double step = 0.01;
+    double initial = 1.;
     
     fMinimizer->SetVariable( 0, "r_a", initial, step );
     fMinimizer->SetVariableLimits( 0, var_min, var_max );
