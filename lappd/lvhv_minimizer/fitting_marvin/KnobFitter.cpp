@@ -35,19 +35,24 @@ namespace g4rwgt
     fMinimizer->SetTolerance( 0.1 );
     fMinimizer->SetPrintLevel(1);
 
-    fMinimizer->SetVariable( 0, "r_a", 1., 0.01 );
-    fMinimizer->SetVariableLimits( 0, 0.005, 100. );
+    double var_min = 0.05;
+    double var_max = 100.;
+    double step = 0.1;
+    double initial = 1.0;
+    
+    fMinimizer->SetVariable( 0, "r_a", initial, step );
+    fMinimizer->SetVariableLimits( 0, var_min, var_max );
 
-    fMinimizer->SetVariable( 1, "r_b", 1., 0.01 );
+    fMinimizer->SetVariable( 1, "r_b", initial, step );
     fMinimizer->SetVariableLimits( 1, 55., 65. );
 
-    fMinimizer->SetVariable( 2, "r_c", 1., 0.01 );
-    fMinimizer->SetVariableLimits( 2, 0.005, 100. );
+    fMinimizer->SetVariable( 2, "r_c", initial, step );
+    fMinimizer->SetVariableLimits( 2, var_min, var_max );
 
     fMinimizer->SetFixedVariable( 3, "r_d", 1e10);
 
-    fMinimizer->SetVariable( 4, "r_e", 1., 0.01 );
-    fMinimizer->SetVariableLimits( 4, 0.005, 100. );
+    fMinimizer->SetVariable( 4, "r_e", initial, step );
+    fMinimizer->SetVariableLimits( 4, var_min, var_max );
 
 
   }
