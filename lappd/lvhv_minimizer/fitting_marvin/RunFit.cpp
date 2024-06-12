@@ -24,10 +24,10 @@
 void RunFit() 
 {
 
-  double r_mcp1 = 7.22;
-  double r_mcp2 = 2.32;
+  double r_mcp1 = 19.1;
+  double r_mcp2 = 14.5;
   
-  std::vector<double> desired_gaps = {100.,950.,200.,950.,300.};
+  std::vector<double> desired_gaps = {100.,725.,200.,725.,200.};
 
   g4rwgt::KnobFitter fitter(r_mcp1, r_mcp2, desired_gaps); 
 

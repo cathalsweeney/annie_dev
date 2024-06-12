@@ -30,23 +30,24 @@ namespace g4rwgt
     fMinimizer = std::unique_ptr<ROOT::Math::Minimizer>
       ( ROOT::Math::Factory::CreateMinimizer( "Minuit2", "Migrad" ) );
 
-    fMinimizer->SetMaxFunctionCalls(2000);
+    fMinimizer->SetMaxFunctionCalls(10000);
+    fMinimizer->SetMaxIterations(10000);
     fMinimizer->SetTolerance( 0.1 );
     fMinimizer->SetPrintLevel(1);
 
-    fMinimizer->SetVariable( 0, "r_a", 0.2181, 0.001 );
-    fMinimizer->SetVariableLimits( 0, 0.05, 0.8 );
+    fMinimizer->SetVariable( 0, "r_a", 1., 0.01 );
+    fMinimizer->SetVariableLimits( 0, 0.005, 100. );
 
-    fMinimizer->SetVariable( 1, "r_b", 2.979, 0.01 );
-    fMinimizer->SetVariableLimits( 1, 1.0, 8.0 );
+    fMinimizer->SetVariable( 1, "r_b", 1., 0.01 );
+    fMinimizer->SetVariableLimits( 1, 55., 65. );
 
-    fMinimizer->SetVariable( 2, "r_c", 0.4334, 0.01 );
-    fMinimizer->SetVariableLimits( 2, 0.1, 4.0 );
+    fMinimizer->SetVariable( 2, "r_c", 1., 0.01 );
+    fMinimizer->SetVariableLimits( 2, 0.005, 100. );
 
     fMinimizer->SetFixedVariable( 3, "r_d", 1e10);
 
-    fMinimizer->SetVariable( 4, "r_e", 0.3173, 0.01 );
-    fMinimizer->SetVariableLimits( 4, 0.1, 4.0 );
+    fMinimizer->SetVariable( 4, "r_e", 1., 0.01 );
+    fMinimizer->SetVariableLimits( 4, 0.005, 100. );
 
 
   }
