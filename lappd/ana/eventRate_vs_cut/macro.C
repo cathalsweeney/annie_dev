@@ -11,6 +11,8 @@
 #include "TCanvas.h"
 #include <iostream>
 
+#include "../commonFunctions/myFunctions.h"
+
 double thresh = 17.0;
 
 std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
@@ -20,6 +22,12 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
     
   TTree *myTree;
   myTree = (TTree*)inFile->Get("ffmytree");
+  double myRunTime;
+  if(inName == "../files/reprocessed_240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root"){
+    myRunTime = 7500.;
+  }
+  else myRunTime = getRunTime(myTree);
+  
   int nChannels = 60;
    
   int NHits;
@@ -114,9 +122,12 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
   if(start>0 && end > 0) runtime = end - start;
   if(inName == "../files/reprocessed_240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root") runtime -= 1691; //awful hack
   else if(inName == "../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne20_nd4p0_2400V_s5/Analysis.root") runtime -= 90; //awful hack
-
-  std::cout << "Runtime is " << runtime << "\n";
-  std::cout << std::setprecision(12) << start << "\n";
+  else if(inName == "../files/LAPPD58/2024-05-03/forcedTrigger_2400V_nd4p0/Analysis.root") runtime = 3200.;
+  else if(inName == "../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne24_2400V_nd4p0_9hz/Analysis.root") runtime = 4700.;
+  
+  std::cout << "Runtime is " << runtime <<  "\n";  
+  std::cout << runtime / myRunTime << "\n";
+  //  std::cout << std::setprecision(12) << start << "\n";
   if(runtime < 0) abort();
 
   vHist[2]->SetBinContent(1, runtime);
@@ -159,21 +170,35 @@ void macro()
   std::vector<int> vColor = {kRed, kGreen+2, kBlue, kMagenta};
     
   std::map<std::string, std::vector<TH1F*> > mHist;
-  mHist["Forced trigger"] = makeHist("../files/reprocessed_240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root", sigStrip);
-  mHist["Self trigger, DAC1 28mV"] = makeHist("../files/reprocessed_240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root", sigStrip);
-  mHist["Self trigger, DAC1 24mV"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne24_nd4p0_2400V_s5/Analysis.root", sigStrip);
-  mHist["Self trigger, DAC1 20mV"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne20_nd4p0_2400V_s5/Analysis.root", sigStrip);
-  mHist["Self trigger, DAC1 16mV"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne16_nd4p0_2400V_s5/Analysis.root", sigStrip);
+//  mHist["Forced trigger"] = makeHist("../files/reprocessed_240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root", sigStrip);
+//  mHist["Self trigger, DAC1 28mV"] = makeHist("../files/reprocessed_240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root", sigStrip);
+//  mHist["Self trigger, DAC1 24mV"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne24_nd4p0_2400V_s5/Analysis.root", sigStrip);
+//  mHist["Self trigger, DAC1 20mV"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne20_nd4p0_2400V_s5/Analysis.root", sigStrip);
+//  mHist["Self trigger, DAC1 16mV"] = makeHist("../files/LAPPD58/2024-04-23/selfTrigger_dacZero17_dacOne16_nd4p0_2400V_s5/Analysis.root", sigStrip);
+
+  mHist["Forced trigger"] = makeHist("../files/LAPPD58/2024-05-03/forcedTrigger_2400V_nd4p0/Analysis.root", sigStrip);
+  mHist["Self trigger, DAC1 28mV"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne28_2400V_nd4p0_9hz/Analysis.root", sigStrip);
+  mHist["Self trigger, DAC1 24mV"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne24_2400V_nd4p0_9hz/Analysis.root", sigStrip);
+  mHist["Self trigger, DAC1 20mV"] = makeHist("../files/LAPPD58/2024-05-06/selfTrigger_dacZero17_dacOne20_2400V_nd4p0_9hz/Analysis.root", sigStrip);
+
   
-  std::vector<double> vCut = {1.7, 3.2, 5., 10., 15., 20., 25., 30., 35., 40.};
+  std::vector<double> vCut = {1.7, 3.2, 5., 10., 15., 20., 25., 30., 35., 40., 100.};
   
   TCanvas* c1 = new TCanvas("c1");
   TCanvas* c2 = new TCanvas("c2");
   TCanvas* c3 = new TCanvas("c3");
   TCanvas* c4 = new TCanvas("c4");
 
+  c1->SetLogy();
+  c2->SetLogy();
+  c3->SetLogy();
+  c4->SetLogy();
+  
   TLegend* legend = new TLegend(0.5,0.6, 0.9,0.9);
 
+  double ymin = 1.e-3;
+  double ymax = 1.e3;
+  
   int iFile = 0;
   std::map<std::string, std::vector<TH1F*> >::iterator it;
   for (it = mHist.begin(); it != mHist.end(); it++){
@@ -187,28 +212,28 @@ void macro()
       
       c1->cd();
       vGraph_side0[0]->SetTitle("Side 0");
-      vGraph_side0[0]->GetYaxis()->SetRangeUser(0., 15.);
+      vGraph_side0[0]->GetYaxis()->SetRangeUser(ymin, ymax);
       vGraph_side0[0]->GetYaxis()->SetTitle("Noise rate (Events / second)");
       vGraph_side0[0]->GetXaxis()->SetTitle("Cut value (mV)");
       vGraph_side0[0]->Draw("AEPL");
 
       c2->cd();
       vGraph_side0[1]->SetTitle("Side 0");
-      vGraph_side0[1]->GetYaxis()->SetRangeUser(0., 15.);
+      vGraph_side0[1]->GetYaxis()->SetRangeUser(ymin, ymax);
       vGraph_side0[1]->GetYaxis()->SetTitle("Signal rate (Events / second)");
       vGraph_side0[1]->GetXaxis()->SetTitle("Cut value (mV)");
       vGraph_side0[1]->Draw("AEPL");      
 
       c3->cd();
       vGraph_side1[0]->SetTitle("Side 1");
-      vGraph_side1[0]->GetYaxis()->SetRangeUser(0., 15.);
+      vGraph_side1[0]->GetYaxis()->SetRangeUser(ymin, ymax);
       vGraph_side1[0]->GetYaxis()->SetTitle("Noise rate (Events / second)");
       vGraph_side1[0]->GetXaxis()->SetTitle("Cut value (mV)");
       vGraph_side1[0]->Draw("AEPL");
 
       c4->cd();
       vGraph_side1[1]->SetTitle("Side 1");
-      vGraph_side1[1]->GetYaxis()->SetRangeUser(0., 15.);
+      vGraph_side1[1]->GetYaxis()->SetRangeUser(ymin, ymax);
       vGraph_side1[1]->GetYaxis()->SetTitle("Signal rate (Events / second)");
       vGraph_side1[1]->GetXaxis()->SetTitle("Cut value (mV)");
       vGraph_side1[1]->Draw("AEPL");      
@@ -252,7 +277,7 @@ void macro()
   legend->Draw("SAME.png");
   c4->SaveAs("c4.png");
 
-  //  //  c->SetLogy();
+
 //
 //
 //  for(int i=0; i <2; i++){

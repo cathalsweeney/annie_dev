@@ -7,10 +7,13 @@
 #include "TDatime.h"
 #include "TCanvas.h"
 #include <iostream>
+#include <chrono>
+
+double headroom = 0.3;
 
 double getRunTime(TTree* myTree)
 {    
-  int nBins = 500;
+  int nBins = 50;
   
   double EventTime;  
   myTree->SetBranchAddress("EventTime",&EventTime);
@@ -31,10 +34,18 @@ double getRunTime(TTree* myTree)
     hist->Fill(EventTime);    
   }// end loop over events
 
+  TCanvas* c = new TCanvas();
+  hist->Draw("HIST");
+  auto now = std::chrono::system_clock::now();
+  auto UTC = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+  c->SaveAs((std::to_string(UTC) + ".png").c_str());
+
+  
   bool atEdge = false;
   bool weird = false;
   double sum = 0.;
   int nCountedBins = 0.;
+  int nZero = 0.;
   std::vector<int> vBinIdx;
   
   for(int iBin=nBins; iBin>0; iBin--){
@@ -58,12 +69,12 @@ double getRunTime(TTree* myTree)
       }
       else{ //more than 4 from edge
 	double avg = sum / (double) nCountedBins;
-	if(cBin/avg < 1.25 && cBin/avg > 0.75){
+	if(cBin/avg < (1+headroom) && cBin/avg > (1-headroom)){
 	  sum += cBin;
 	  nCountedBins++;
 	  weird = false;
 	}
-      	else if(cBin/avg < 2.25 && cBin/avg > 1.75){
+      	else if(cBin/avg < (2+headroom) && cBin/avg > (2-headroom)){
 	  if(vBinIdx.size() == 1){
 	    vBinIdx.push_back(iBin);
 	  }
@@ -75,7 +86,7 @@ double getRunTime(TTree* myTree)
 	  nCountedBins++;
 	  weird = false;
 	}
-      	else if(cBin/avg < 3.25 && cBin/avg > 2.75){
+      	else if(cBin/avg < (3+headroom) && cBin/avg > (3-headroom)){
 	  if(vBinIdx.size() == 2){
 	    vBinIdx.push_back(iBin);
 	  }
@@ -87,7 +98,7 @@ double getRunTime(TTree* myTree)
 	  nCountedBins++;
 	  weird = false;
 	}
-      	else if(cBin/avg < 4.25 && cBin/avg > 3.75){
+      	else if(cBin/avg < (4+headroom) && cBin/avg > (4-headroom)){
 	  if(vBinIdx.size() == 3){
 	    vBinIdx.push_back(iBin);
 	  }
@@ -99,12 +110,22 @@ double getRunTime(TTree* myTree)
 	  nCountedBins++;
 	  weird = false;
 	}
+      	else if(cBin/avg < 0.4){
+	  nZero++;
+	  if(nZero > 4){
+	    std::cout << "Too many empty bins \n"; 
+	    abort();
+	  }
+	  weird = false;
+	}
 	else{
 	  if(weird){
 	   std::cout << "Something wrong here D \n";
-	   std::cout << cBin << ", " << avg << "\n";
-	   abort();	  
+	   std::cout << iBin << ", " << cBin << ", " << avg << "\n";
+	   return -1;
+	   //	   abort();	  
 	  }
+	  weird = true;
 	}
 	
       }// end more than 4 from edge
@@ -118,7 +139,8 @@ double getRunTime(TTree* myTree)
     double val = hist->GetXaxis()->GetBinLowEdge(binIdx+1);
     runTime += val;
   }
-
+  runTime -= nZero*hist->GetXaxis()->GetBinWidth(1);;
+  
   return runTime;
 } // end getRunTime()
 

@@ -10,7 +10,9 @@
 #include <iostream>
 
 int nHist = 4;
-int noiseStrip = 10;
+int noiseStrip = 16;
+
+std::vector<int> vColour = {kBlack, kBlue};
 
 TH1F* DivideHist(TH1F* hNum, TH1F* hDenom)
 {
@@ -90,111 +92,74 @@ std::vector<TH1F*> makeHist(std::string inName, int laserStrip)
   std::cout << vHist[0]->Integral() / (double) vHist[1]->Integral() << ", " <<  vHist[2]->Integral() / (double) vHist[3]->Integral() << "\n";
 
   
-  double runtime = -1;
-  if(start>0 && end > 0) runtime = end - start;
-  if(inName == "files/240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root") runtime -= 1691; //awful hack
-
-  std::cout << "Runtime is " << runtime << "\n";
-  std::cout << std::setprecision(12) << start << "\n";
-  if(runtime < 0) abort();
-  
-  for(TH1F* hist : vHist) hist->Scale(1.0/runtime);
+//  double runtime = -1;
+//  if(start>0 && end > 0) runtime = end - start;
+//  
+//  std::cout << "Runtime is " << runtime << "\n";
+//  std::cout << std::setprecision(12) << start << "\n";
+//  if(runtime < 0) abort();
+//  
+//  for(TH1F* hist : vHist) hist->Scale(1.0/runtime);
+  for(TH1F* hist : vHist){
+    int integral = hist->Integral();
+    hist->Scale(1.0/integral);
+  }
   
   return vHist;
 } // end makeHist()
 
-
 void plot_assort()
 {
-
-  //TH1F* hist1 = makeHist("240314_lappd39_forceTrigger_nd3p0_daczero18_dacone130_5k_Analysis.root");
-
-
-  int sigStrip = 5;
-  
-  //TH1F* hist1 = makeHist("240314_lappd39_forceTrigger_nd3p0_daczero18_dacone130_5k_Analysis.root");
-  
-
-  
+  int sigStrip = 14;
+ 
   std::map<std::string, std::vector<TH1F*> > mHist;
-  mHist["ND 4.0"] = makeHist("files/240411_forcedTrigger_nd4p0_LAPPD58_Analysis.root", sigStrip);
-  mHist["ND 4.5"] = makeHist("files/240411_forcedTrigger_nd4p5_LAPPD58_Analysis.root", sigStrip);
-  mHist["ND 4.7"] = makeHist("files/240412_forcedTrigger_nd4p7_LAPPD58_Analysis.root", sigStrip);
-  mHist["ND 3.7"] = makeHist("files/240415_forcedTrigger_nd3p7_LAPPD58_Analysis.root", sigStrip);
-  mHist["ND 4.0 FT"] = makeHist("files/240417_selfTrigger_dacZero17_dacOne28_nd4p0_LAPPD58_Analysis.root", sigStrip);
-  
-//  std::vector<TH1F*> vHist2 = makeHist("240318_s6_selfTrigger_dacZero18_dacOne130_nd3p0_laserOn_Analysis.root", 6, 10860);
-//  std::vector<TH1F*> vHist3 = makeHist("240318_s6_selfTrigger_dacZero8_dacOne130_nd3p0_laserOn_Analysis.root", 6, 3180);
-//  std::vector<TH1F*> vHist4 = makeHist("240318_s6_selfTrigger_dacZero2_dacOne130_nd3p0_laserOn_Analysis.root", 6, 360);
-//
-//  std::vector<TH1F*> vHist5 = makeHist("240314_lappd39_forceTrigger_nd3p0_daczero18_dacone130_5k_Analysis.root", 10, 23940);
-//
-//
-//  std::vector<TH1F*> vHist6 = makeHist("240319_selfTrigger_dacZero8_dacOne130_laserOn_hvOn_nd2p5_Analysis.root", 6, 369);
-//  std::vector<TH1F*> vHist7 = makeHist("240319_selfTrigger_dacZero8_dacOne130_laserOff_hvOn_nd2p5_Analysis.root", 6, 5792);
 
 
-  
+  mHist["ND 4.0"] = makeHist("../files/LAPPD39/2024-07-24/forcedTrigger_strip14_nd4p0/Analysis.root", sigStrip);
+  mHist["ND 4.5"] = makeHist("../files/LAPPD39/2024-07-24/forcedTrigger_strip14_nd4p5/Analysis.root", sigStrip);
+  //  mHist["ND 3.8 (Feb 2024)"] = makeHist("../files/LAPPD39/2024-02-21/s20_2550_nd3p8/Analysis.root", 20);
+  mHist["ND 4.0 (Feb 2024)"] = makeHist("../files/LAPPD39/2024-02-21/s20_2550_nd4p0/Analysis.root", 20);
+    
   TCanvas* c = new TCanvas();
   c->SetLogy();
-  
+
   for(int i=0; i<nHist; i++){  
-    //    vHist6[i]->SetLineColor(kBlue);
-    //    vHist7[i]->SetLineColor(kRed);
 
     std::string strip;
-    if(i == 0) strip = "StripPeak (strip "+std::to_string(sigStrip)+", side 0)";
-    else if(i == 1) strip = "StripPeak (strip "+std::to_string(sigStrip)+", side 1)";
+    //    if(i == 0) strip = "StripPeak (strip "+std::to_string(sigStrip)+", side 0)";
+    //    else if(i == 1) strip = "StripPeak (strip "+std::to_string(sigStrip)+", side 1)";
+    if(i == 0) strip = "StripPeak (Laser strip), side 0)";
+    else if(i == 1) strip = "StripPeak (Laser strip), side 1)";
     else if(i == 2) strip = ("StripPeak (strip "+std::to_string(noiseStrip)+", side 0)").c_str();
     else if(i == 3) strip = ("StripPeak (strip "+std::to_string(noiseStrip)+", side 1)").c_str();
 
 
-    //~~~~~~~~~~~~~~~~~~~~~~~~
-//    mHist["ND 4.0"][i]->GetYaxis()->SetRangeUser(1e-4, 1e5);
-//    mHist["ND 4.0"][i]->GetYaxis()->SetTitle("Ratio to ND 4.5");
-//    mHist["ND 4.0"][i] = DivideHist(mHist["ND 4.0"][i], mHist["ND 4.5"][i]);
-//    mHist["ND 4.7"][i] = DivideHist(mHist["ND 4.7"][i], mHist["ND 4.5"][i]);
-//    mHist["ND 3.7"][i] = DivideHist(mHist["ND 3.7"][i], mHist["ND 4.5"][i]);
-//    mHist["ND 4.0 FT"][i] = DivideHist(mHist["ND 4.0 FT"][i], mHist["ND 4.5"][i]);
-//    mHist["ND 4.5"][i] = DivideHist(mHist["ND 4.5"][i], mHist["ND 4.5"][i]);
-    //~~~~~~~~~~~~~~~~~~~~~~~~
-
+    mHist["ND 4.5"][i]->SetLineColor(kRed);
+    //    mHist["ND 3.8 (Feb 2024)"][i]->SetLineColor(kGreen+2);
+    mHist["ND 4.0 (Feb 2024)"][i]->SetLineColor(kBlue);
+    
     //---------------------------
-//    mHist["ND 4.0"][i]->GetYaxis()->SetRangeUser(1e-4, 10);
-//    mHist["ND 4.0"][i]->GetYaxis()->SetTitle("Events / second (Hz)");
-//    mHist["ND 4.0"][i]->GetXaxis()->SetTitle( strip.c_str());
+    //    mHist["ND 4.0"][i]->GetYaxis()->SetRangeUser(1, 10e6);
+    mHist["ND 4.0"][i]->GetYaxis()->SetRangeUser(1e-5, 1);
+    mHist["ND 4.0"][i]->GetYaxis()->SetTitle("Events (area normalised)");
+    //    mHist["ND 4.0"][i]->GetYaxis()->SetTitle("Events / second (Hz)");
+    mHist["ND 4.0"][i]->GetXaxis()->SetTitle( strip.c_str());
     //---------------------------
-
-    //<<<<<<<<<<<<<
-    if(i==1 || i==3) continue;
-    mHist["ND 4.0"][i]->GetYaxis()->SetRangeUser(1e-2, 1e2);
-    mHist["ND 4.0"][i]->GetYaxis()->SetTitle("Side 0 / Side 1");
-    mHist["ND 4.0"][i] = DivideHist(mHist["ND 4.0"][i], mHist["ND 4.0"][i+1]);
-    mHist["ND 4.7"][i] = DivideHist(mHist["ND 4.7"][i], mHist["ND 4.7"][i+1]);
-    mHist["ND 3.7"][i] = DivideHist(mHist["ND 3.7"][i], mHist["ND 3.7"][i+1]);
-    mHist["ND 4.0 FT"][i] = DivideHist(mHist["ND 4.0 FT"][i], mHist["ND 4.0 FT"][i+1]);
-    mHist["ND 4.5"][i] = DivideHist(mHist["ND 4.5"][i], mHist["ND 4.5"][i+1]);
-    //<<<<<<<<<<<<<
-
-    mHist["ND 4.5"][i]->SetLineColor(kBlue);
-    mHist["ND 4.7"][i]->SetLineColor(kRed);
-    mHist["ND 3.7"][i]->SetLineColor(kGreen+2);
-    mHist["ND 4.0 FT"][i]->SetLineColor(kMagenta+2);
 	
-    TLegend* legend = new TLegend(0.75,0.7, 0.9,0.9);
-    legend->AddEntry(mHist["ND 3.7"][i], "ND 3.7","l");
+    TLegend* legend = new TLegend(0.6,0.6, 0.9,0.9);
     legend->AddEntry(mHist["ND 4.0"][i], "ND 4.0","l");
-    legend->AddEntry(mHist["ND 4.0 FT"][i], "ND 4.0 FT","l");
     legend->AddEntry(mHist["ND 4.5"][i], "ND 4.5","l");
-    legend->AddEntry(mHist["ND 4.7"][i], "ND 4.7","l");
-				    
+    //    legend->AddEntry(mHist["ND 3.8 (Feb 2024)"][i], "ND 3.8 (Feb 2024)","l");
+    legend->AddEntry(mHist["ND 4.0 (Feb 2024)"][i], "ND 4.0 (Feb 2024)","l");
+    
     mHist["ND 4.0"][i]->Draw("HIST");
     mHist["ND 4.5"][i]->Draw("SAME HIST");
-    mHist["ND 4.7"][i]->Draw("SAME HIST");
-    mHist["ND 3.7"][i]->Draw("SAME HIST");
-    mHist["ND 4.0 FT"][i]->Draw("SAME HIST");
+    //    mHist["ND 3.8 (Feb 2024)"][i]->Draw("SAME HIST");
+    mHist["ND 4.0 (Feb 2024)"][i]->Draw("SAME HIST");
     legend->Draw("SAME");
     c->SaveAs(("laser_"+ std::to_string(i)+".png").c_str());
+
+    std::cout <<  mHist["ND 4.0"][i]->Integral() /  mHist["ND 4.5"][i]->Integral() << "\n";
   }
   
 
