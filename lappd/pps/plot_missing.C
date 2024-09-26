@@ -249,45 +249,44 @@ void plot_missing()
   //  gStyle->SetOptStat(111110);
   gStyle->SetOptStat(1110);
   //TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/4765/LAPPDTree.root");
-  //  TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5007/LAPPDTree.root");
-  TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5008/LAPPDTree.root");
+  TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5007/LAPPDTree.root");
+  //TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5008/LAPPDTree.root");
 
   TTree *myTree;
   myTree = (TTree*)inFile->Get("TimeStamp");
 
-  int entries = myTree->GetEntries();
+
+  //--------------------------------------
+
+    std::string xLabel = "#Delta t_{pps} (clock ticks)";
+    std::string yLabel = "Events (normalised)";
+    Long64_t xLo = -6e8;
+    Long64_t xHi = 7e8;
+    //Long64_t xLo = -6e7;
+    //Long64_t xHi = 5e7;
+    //  double yLo = 5e-1;
+    //  double yHi = 1e6;
+    double yLo = 1e-6;
+    double yHi = 10;
+
+
+    std::string xLabel_zoom = "#Delta t_{pps} - 3.2e8 (clock ticks)";
+    Long64_t xLo_zoom = -15;
+    Long64_t xHi_zoom = 15;
+    int nBins_zoom = xHi_zoom - xLo_zoom;
+    //  double yLo_zoom = 5e-1;
+    //  double yHi_zoom = 1e6;
+    double yLo_zoom = 1e-7;
+    double yHi_zoom = 1;
   
-  ULong64_t ppsTime0;
-  ULong64_t ppsTime1;
-  int LAPPD_ID;
-  
-  
-  myTree->SetBranchAddress("ppsTime0",&ppsTime0);
-  myTree->SetBranchAddress("ppsTime1",&ppsTime1);
-  myTree->SetBranchAddress("LAPPD_ID",&LAPPD_ID);
+//    Long64_t xLo_zoom2 = -50;
+//    Long64_t xHi_zoom2 = 50;
+//    Long64_t xLo_zoom2 = -1e3;
+//    Long64_t xHi_zoom2 = 1e3;  
+    Long64_t xLo_zoom2 = -1e8;
+    Long64_t xHi_zoom2 = 1e8;  
 
-  std::string xLabel = "#Delta t_{pps} (clock ticks)";
-  std::string yLabel = "Events (normalised)";
-  Long64_t xLo = -6e8;
-  Long64_t xHi = 7e8;
-  //  double yLo = 5e-1;
-  //  double yHi = 1e6;
-  double yLo = 1e-6;
-  double yHi = 10;
-
-
-  std::string xLabel_zoom = "#Delta t_{pps} - 3.2e8 (clock ticks)";
-  Long64_t xLo_zoom = -15;
-  Long64_t xHi_zoom = 15;
-  int nBins_zoom = xHi_zoom - xLo_zoom;
-//  double yLo_zoom = 5e-1;
-//  double yHi_zoom = 1e6;
-  double yLo_zoom = 1e-7;
-  double yHi_zoom = 1;
-
-  Long64_t xLo_zoom2 = -50;
-  Long64_t xHi_zoom2 = 50;
-  int nBins_zoom2 = 100;
+    int nBins_zoom2 = 100;
   
   std::vector<std::pair<TH1F*,TH1F*>> hDiff_vec; // pair of hists {acdc0, acdc1} for each LAPPD ID
   std::vector<std::pair<TH1F*,TH1F*>> hDiff_vec_zoom; // same thing, but we subtract 3.2e8 (= 1s) from entries
@@ -327,69 +326,87 @@ void plot_missing()
     hACDC1_zoom2->SetTitle("ACDC 1");    
     hDiff_vec_zoom2.push_back({hACDC0_zoom2, hACDC1_zoom2});
 
-
   }
-
-
   std::vector<std::pair<std::vector<int>,std::vector<int> > > vCounts; // count number of events where delta_t is 0, 3.2e8, or other
   for(int i=0; i<nLAPPD; i++){
     std::pair<std::vector<int>,std::vector<int> > pair = { {0,0,0} , {0,0,0} };
     vCounts.push_back(pair);
   }
   
-  std::pair<Long64_t, Long64_t> pps_prev = {0, 0}; // pps timestamp from the previous event {ACDC0, ACDC1}
-  std::pair<Long64_t, Long64_t> pps_current = {0, 0}; // pps timestamp from the current event {ACDC0, ACDC1}
 
-  std::pair<Long64_t, Long64_t> diff = {0, 0};
+  //---------------------------------------
 
-  //  for(int i=0; i<entries; i++){
-
-  //~~~~~~~~~~~~~~~~~~~~~~~~~
-  myTree->BuildIndex("ppsTime0");
-  TTreeIndex* index = (TTreeIndex*) myTree->GetTreeIndex();
-  //~~~~~~~~~~~~~~~~~~~~~~~~~
-  for(int i=0; i < index->GetN(); i++){
-    diff = {0,0};
-    pps_prev = pps_current; 
-    //    myTree->GetEntry(i);
-    Long64_t local = myTree->LoadTree( index->GetIndex()[i] );
-    myTree->GetEntry(local);
-    if(ppsTime0 == 0 || ppsTime1 == 0) std::cout << "FOO A \n";
-
-    pps_current = {ppsTime0, ppsTime1};
-    diff.first = pps_current.first - pps_prev.first;
-    diff.second = pps_current.second - pps_prev.second;    
-
-    hDiff_vec[LAPPD_ID].first->Fill(diff.first);
-    hDiff_vec[LAPPD_ID].second->Fill(diff.second);
-
-    hDiff_vec_zoom[LAPPD_ID].first->Fill(diff.first - 3.2e8);
-    hDiff_vec_zoom[LAPPD_ID].second->Fill(diff.second - 3.2e8);
-
-    hDiff_vec_zoom2[LAPPD_ID].first->Fill(diff.first);
-    hDiff_vec_zoom2[LAPPD_ID].second->Fill(diff.second);
+  std::vector<std::string> vVar = {"ppsTime0", "ppsTime1"};
+  for(std::string var : vVar){
+    ULong64_t ppsTime;
+    int LAPPD_ID;
     
-    if(diff.first == 0) vCounts[LAPPD_ID].first.at(0)++;
-    else if(diff.first == 3.2e8) vCounts[LAPPD_ID].first.at(1)++;
-    else vCounts[LAPPD_ID].first.at(2)++;
-
-    if(diff.second == 0) vCounts[LAPPD_ID].second.at(0)++;
-    else if(diff.second == 3.2e8) vCounts[LAPPD_ID].second.at(1)++;
-    else vCounts[LAPPD_ID].second.at(2)++;
-
-
     
-  
-    if(diff.first > xHi || diff.first < xLo){
-      std::cout << pps_prev.first << " : " << pps_current.first << " : " << diff.first <<  "\n";
-    }
-    if(diff.second > xHi || diff.second < xLo){
-      std::cout << pps_prev.second << " : " << pps_current.second << " : " << diff.second <<  "\n";
-    }
+    myTree->SetBranchAddress(var.c_str(),&ppsTime);
+    myTree->SetBranchAddress("LAPPD_ID",&LAPPD_ID);
 
+    Long64_t pps_prev = 0; // pps timestamp from the previous event
+    Long64_t pps_current = 0; // pps timestamp from the current event 
+
+    Long64_t diff = 0;
+
+    //  for(int i=0; i<entries; i++){
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~
+    myTree->BuildIndex(var.c_str());
+    TTreeIndex* index = (TTreeIndex*) myTree->GetTreeIndex();
+    //~~~~~~~~~~~~~~~~~~~~~~~~~
+    for(int i=0; i < index->GetN(); i++){
+      diff = 0;
+      pps_prev = pps_current; // copy over pps_current from previous event
+      //    myTree->GetEntry(i);
+      Long64_t local = myTree->LoadTree( index->GetIndex()[i] );
+      myTree->GetEntry(local);
+      if(ppsTime == 0) std::cout << "FOO A \n";
+
+      // filter out "duplicates"
+      if( (ppsTime - pps_prev) < 2e7){
+	//	pps_current = ppsTime;
+	continue;
+      }
+      
+      pps_current = ppsTime;
+      diff = pps_current - pps_prev;
+
+      
+      if(var == "ppsTime0"){
+	hDiff_vec[LAPPD_ID].first->Fill(diff);
+	hDiff_vec_zoom[LAPPD_ID].first->Fill(diff - 3.2e8);
+	hDiff_vec_zoom2[LAPPD_ID].first->Fill(diff);
+ 	if(diff == 0) vCounts[LAPPD_ID].first.at(0)++;
+	else if(diff == 3.2e8) vCounts[LAPPD_ID].first.at(1)++;
+	else vCounts[LAPPD_ID].first.at(2)++;
+      }
+      else if(var == "ppsTime1"){
+	hDiff_vec[LAPPD_ID].second->Fill(diff);
+	hDiff_vec_zoom[LAPPD_ID].second->Fill(diff - 3.2e8);
+	hDiff_vec_zoom2[LAPPD_ID].second->Fill(diff);
+	if(diff == 0) vCounts[LAPPD_ID].second.at(0)++;
+	else if(diff == 3.2e8) vCounts[LAPPD_ID].second.at(1)++;
+	else vCounts[LAPPD_ID].second.at(2)++;
+      }
+      else{
+	std::cout << "something wrong here \n";
+	abort();
+      }
+      
+
+
+      
+      
+      if(diff > xHi || diff < xLo){
+      std::cout << pps_prev << " : " << pps_current << " : " << diff <<  "\n";
+      }      
+      
+    }// end loop over events
+
+  }//end for var
     
-  }
-
 
   for(int i=0; i<nLAPPD; i++){
     for(int j : vCounts[i].first) std::cout << j << ", ";
