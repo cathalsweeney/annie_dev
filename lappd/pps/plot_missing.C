@@ -341,10 +341,19 @@ void plot_missing()
   std::pair<Long64_t, Long64_t> pps_current = {0, 0}; // pps timestamp from the current event {ACDC0, ACDC1}
 
   std::pair<Long64_t, Long64_t> diff = {0, 0};
-  for(int i=0; i<entries; i++){
+
+  //  for(int i=0; i<entries; i++){
+
+  //~~~~~~~~~~~~~~~~~~~~~~~~~
+  myTree->BuildIndex("ppsTime0");
+  TTreeIndex* index = (TTreeIndex*) myTree->GetTreeIndex();
+  //~~~~~~~~~~~~~~~~~~~~~~~~~
+  for(int i=0; i < index->GetN(); i++){
     diff = {0,0};
     pps_prev = pps_current; 
-    myTree->GetEntry(i);
+    //    myTree->GetEntry(i);
+    Long64_t local = myTree->LoadTree( index->GetIndex()[i] );
+    myTree->GetEntry(local);
     if(ppsTime0 == 0 || ppsTime1 == 0) std::cout << "FOO A \n";
 
     pps_current = {ppsTime0, ppsTime1};
@@ -370,13 +379,13 @@ void plot_missing()
 
 
     
-    //
-//    if(diff.first > xHi || diff.first < xLo){
-//      std::cout << pps_prev.first << " : " << pps_current.first << " : " << diff.first <<  "\n";
-//    }
-//    if(diff.second > xHi || diff.second < xLo){
-//      std::cout << pps_prev.second << " : " << pps_current.second << " : " << diff.second <<  "\n";
-//    }
+  
+    if(diff.first > xHi || diff.first < xLo){
+      std::cout << pps_prev.first << " : " << pps_current.first << " : " << diff.first <<  "\n";
+    }
+    if(diff.second > xHi || diff.second < xLo){
+      std::cout << pps_prev.second << " : " << pps_current.second << " : " << diff.second <<  "\n";
+    }
 
     
   }
