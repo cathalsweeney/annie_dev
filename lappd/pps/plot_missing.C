@@ -10,10 +10,39 @@
 #include <iostream>
 
 int nLAPPD = 3;
-int nBins = 100;
+int nBins = 200;
 int prec = 3;
-double textX = -5.5e8;
+double textX = -20e8;
 double textSize = 0.05;
+double factor = 100.;
+bool isLogY = true;
+
+double xLo = -22e8;
+//    Long64_t xHi = 7e8;
+double xHi = 30e8;
+//Long64_t xLo = -6e7;
+//Long64_t xHi = 5e7;
+//  double yLo = 5e-1;
+//  double yHi = 1e6;
+double yLo = 1e-6;
+double yHi = 10;
+
+
+
+void DrawLines(){
+
+  int nLine = 9;
+  for(int iLine=0; iLine<nLine; iLine++){
+
+    double xVal = (iLine+1)*3.2e8;
+    TLine* line = new TLine(xVal, yLo, xVal, yHi);
+    line->SetLineStyle(2);
+    line->Draw("");
+  }
+
+}
+
+
 
 void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
 	     std::vector<std::pair<std::vector<int>,std::vector<int> > > vCounts )
@@ -26,8 +55,8 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
   Color_t g = kGreen+2;
   Color_t r = kRed;
   Color_t b = kBlack;
-  vColor.push_back({ {r,r,g}, {r,g,r} });
-  vColor.push_back({ {r,r,g}, {r,r,g} });
+  vColor.push_back({ {r,g,r}, {r,g,r} });
+  vColor.push_back({ {r,g,r}, {r,g,r} });
   vColor.push_back({ {r,g,r}, {r,g,r} });
 
 //  vColor.push_back({ {b,b,b}, {b,b,b} });
@@ -52,7 +81,7 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
 
   for(int i=0; i<nLAPPD; i++){
     c->cd(i+1);
-    gPad->SetLogy(true);
+    if(isLogY) gPad->SetLogy(true);
     int int_1 = vCounts.at(i).first.at(0) + vCounts.at(i).first.at(1) + vCounts.at(i).first.at(2);
     double frac1_1 = vCounts.at(i).first.at(0) / (double) int_1;
     double frac2_1 = vCounts.at(i).first.at(1) / (double) int_1;
@@ -60,27 +89,28 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
     std::ostringstream out0_1;
     out0_1 << "nEvents = " << int_1 ;
     std::ostringstream out1_1;
-    out1_1 << "(#Delta t = 0) :       " << setprecision(prec) << (frac1_1*100) << "%";
+    out1_1 << "(#Delta t = 0) :          " << setprecision(prec) << (frac1_1*100) << "%";
     std::ostringstream out2_1;
-    out2_1 << "(#Delta t = 3.2e8) : " << setprecision(prec) << (frac2_1*100) << "%";
+    out2_1 << "(#Delta t = 3.2e8#pm1) : " << setprecision(prec) << (frac2_1*100) << "%";
     std::ostringstream out3_1;
-    out3_1 << "Other :            " << setprecision(prec) << (frac3_1*100) << "%";
+    out3_1 << "Other :               " << setprecision(prec) << (frac3_1*100) << "%";
     vHist[i].first->Draw("HIST"); 
-    TLatex* text0_1 = new TLatex(textX, 64e-4, out0_1.str().c_str() );
+    TLatex* text0_1 = new TLatex(textX, factor*64e-4, out0_1.str().c_str() );
     text0_1->SetTextSize(textSize);
     text0_1->Draw("SAME");
-    TLatex* text1_1 = new TLatex(textX,16e-4, out1_1.str().c_str() );
+    TLatex* text1_1 = new TLatex(textX,factor*16e-4, out1_1.str().c_str() );
     text1_1->SetTextSize(textSize);
     text1_1->SetTextColor(vColor.at(i).first.at(0));
     text1_1->Draw("SAME");
-    TLatex* text2_1 = new TLatex(textX,4e-4, out2_1.str().c_str() );
+    TLatex* text2_1 = new TLatex(textX,factor*4e-4, out2_1.str().c_str() );
     text2_1->SetTextSize(textSize);
     text2_1->SetTextColor(vColor.at(i).first.at(1));
     text2_1->Draw("SAME");
-    TLatex* text3_1 = new TLatex(textX,1e-4, out3_1.str().c_str() );
+    TLatex* text3_1 = new TLatex(textX,factor*1e-4, out3_1.str().c_str() );
     text3_1->SetTextSize(textSize);
     text3_1->SetTextColor(vColor.at(i).first.at(2));
     text3_1->Draw("SAME");
+    DrawLines();
     gPad->Update();
     TPaveStats *st1 = (TPaveStats*)vHist[i].first->FindObject("stats");
     st1->SetX1NDC(2.); //new x start position
@@ -91,7 +121,7 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
 
     
     c->cd(i+1+3);
-    gPad->SetLogy(true);
+    if(isLogY) gPad->SetLogy(true);
     int int_2 = vCounts.at(i).second.at(0) + vCounts.at(i).second.at(1) + vCounts.at(i).second.at(2);
     double frac1_2 = vCounts.at(i).second.at(0) / (double) int_2;
     double frac2_2 = vCounts.at(i).second.at(1) / (double) int_2;
@@ -99,27 +129,28 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
     std::ostringstream out0_2;
     out0_2 << "nEvents = " << int_2 ;
     std::ostringstream out1_2;
-    out1_2 << "(#Delta t = 0) :       " << setprecision(prec) << (frac1_2*100) << "%";
+    out1_2 << "(#Delta t = 0) :          " << setprecision(prec) << (frac1_2*100) << "%";
     std::ostringstream out2_2;
-    out2_2 << "(#Delta t = 3.2e8) : " << setprecision(prec) << (frac2_2*100) << "%";
+    out2_2 << "(#Delta t = 3.2e8#pm1) : " << setprecision(prec) << (frac2_2*100) << "%";
     std::ostringstream out3_2;
-    out3_2 << "Other :            " << setprecision(prec) << (frac3_2*100) << "%";
+    out3_2 << "Other :               " << setprecision(prec) << (frac3_2*100) << "%";
     vHist[i].second->Draw("HIST"); 
-    TLatex* text0_2 = new TLatex(textX,64e-4, out0_2.str().c_str() );
+    TLatex* text0_2 = new TLatex(textX,factor*64e-4, out0_2.str().c_str() );
     text0_2->SetTextSize(textSize);
     text0_2->Draw("SAME");
-    TLatex* text1_2 = new TLatex(textX,16e-4, out1_2.str().c_str() );
+    TLatex* text1_2 = new TLatex(textX,factor*16e-4, out1_2.str().c_str() );
     text1_2->SetTextSize(textSize);
     text1_2->SetTextColor(vColor.at(i).second.at(0));
     text1_2->Draw("SAME");
-    TLatex* text2_2 = new TLatex(textX,4e-4, out2_2.str().c_str() );
+    TLatex* text2_2 = new TLatex(textX,factor*4e-4, out2_2.str().c_str() );
     text2_2->SetTextSize(textSize);
     text2_2->SetTextColor(vColor.at(i).second.at(1));
     text2_2->Draw("SAME");
-    TLatex* text3_2 = new TLatex(textX,1e-4, out3_2.str().c_str() );
+    TLatex* text3_2 = new TLatex(textX,factor*1e-4, out3_2.str().c_str() );
     text3_2->SetTextSize(textSize);
     text3_2->SetTextColor(vColor.at(i).second.at(2));
     text3_2->Draw("SAME");
+    DrawLines();
     gPad->Update();
     TPaveStats *st2 = (TPaveStats*)vHist[i].second->FindObject("stats");
     st2->SetX1NDC(2.); //new x start position
@@ -249,8 +280,8 @@ void plot_missing()
   //  gStyle->SetOptStat(111110);
   gStyle->SetOptStat(1110);
   //TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/4765/LAPPDTree.root");
-  TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5007/LAPPDTree.root");
-  //TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5008/LAPPDTree.root");
+  //TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5007/LAPPDTree.root");
+  TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5008/LAPPDTree.root");
 
   TTree *myTree;
   myTree = (TTree*)inFile->Get("TimeStamp");
@@ -260,14 +291,6 @@ void plot_missing()
 
     std::string xLabel = "#Delta t_{pps} (clock ticks)";
     std::string yLabel = "Events (normalised)";
-    Long64_t xLo = -6e8;
-    Long64_t xHi = 7e8;
-    //Long64_t xLo = -6e7;
-    //Long64_t xHi = 5e7;
-    //  double yLo = 5e-1;
-    //  double yHi = 1e6;
-    double yLo = 1e-6;
-    double yHi = 10;
 
 
     std::string xLabel_zoom = "#Delta t_{pps} - 3.2e8 (clock ticks)";
@@ -281,10 +304,10 @@ void plot_missing()
   
 //    Long64_t xLo_zoom2 = -50;
 //    Long64_t xHi_zoom2 = 50;
-//    Long64_t xLo_zoom2 = -1e3;
-//    Long64_t xHi_zoom2 = 1e3;  
-    Long64_t xLo_zoom2 = -1e8;
-    Long64_t xHi_zoom2 = 1e8;  
+    Long64_t xLo_zoom2 = -1e1;
+    Long64_t xHi_zoom2 = 1e1;  
+//    Long64_t xLo_zoom2 = -1e8;
+//    Long64_t xHi_zoom2 = 1e8;  
 
     int nBins_zoom2 = 100;
   
@@ -337,75 +360,83 @@ void plot_missing()
   //---------------------------------------
 
   std::vector<std::string> vVar = {"ppsTime0", "ppsTime1"};
-  for(std::string var : vVar){
-    ULong64_t ppsTime;
-    int LAPPD_ID;
-    
-    
-    myTree->SetBranchAddress(var.c_str(),&ppsTime);
-    myTree->SetBranchAddress("LAPPD_ID",&LAPPD_ID);
 
-    Long64_t pps_prev = 0; // pps timestamp from the previous event
-    Long64_t pps_current = 0; // pps timestamp from the current event 
-
-    Long64_t diff = 0;
-
-    //  for(int i=0; i<entries; i++){
-
-    //~~~~~~~~~~~~~~~~~~~~~~~~~
-    myTree->BuildIndex(var.c_str());
-    TTreeIndex* index = (TTreeIndex*) myTree->GetTreeIndex();
-    //~~~~~~~~~~~~~~~~~~~~~~~~~
-    for(int i=0; i < index->GetN(); i++){
-      diff = 0;
-      pps_prev = pps_current; // copy over pps_current from previous event
-      //    myTree->GetEntry(i);
-      Long64_t local = myTree->LoadTree( index->GetIndex()[i] );
-      myTree->GetEntry(local);
-      if(ppsTime == 0) std::cout << "FOO A \n";
-
-      // filter out "duplicates"
-      if( (ppsTime - pps_prev) < 2e7){
-	//	pps_current = ppsTime;
-	continue;
-      }
-      
-      pps_current = ppsTime;
-      diff = pps_current - pps_prev;
-
-      
-      if(var == "ppsTime0"){
-	hDiff_vec[LAPPD_ID].first->Fill(diff);
-	hDiff_vec_zoom[LAPPD_ID].first->Fill(diff - 3.2e8);
-	hDiff_vec_zoom2[LAPPD_ID].first->Fill(diff);
- 	if(diff == 0) vCounts[LAPPD_ID].first.at(0)++;
-	else if(diff == 3.2e8) vCounts[LAPPD_ID].first.at(1)++;
-	else vCounts[LAPPD_ID].first.at(2)++;
-      }
-      else if(var == "ppsTime1"){
-	hDiff_vec[LAPPD_ID].second->Fill(diff);
-	hDiff_vec_zoom[LAPPD_ID].second->Fill(diff - 3.2e8);
-	hDiff_vec_zoom2[LAPPD_ID].second->Fill(diff);
-	if(diff == 0) vCounts[LAPPD_ID].second.at(0)++;
-	else if(diff == 3.2e8) vCounts[LAPPD_ID].second.at(1)++;
-	else vCounts[LAPPD_ID].second.at(2)++;
-      }
-      else{
-	std::cout << "something wrong here \n";
-	abort();
-      }
-      
-
-
+  for(int iLAPPD=0; iLAPPD<nLAPPD; iLAPPD++){
+  
+    for(std::string var : vVar){
+      ULong64_t ppsTime;
+      int LAPPD_ID;
       
       
-      if(diff > xHi || diff < xLo){
-      std::cout << pps_prev << " : " << pps_current << " : " << diff <<  "\n";
-      }      
-      
-    }// end loop over events
+      myTree->SetBranchAddress(var.c_str(),&ppsTime);
+      myTree->SetBranchAddress("LAPPD_ID",&LAPPD_ID);
+  
+      Long64_t pps_prev = 0; // pps timestamp from the previous event
+      Long64_t pps_current = 0; // pps timestamp from the current event 
+  
+      Long64_t diff = 0;
+  
+  
+      //~~~~~~~~~~~~~~~~~~~~~~~~~
+      myTree->BuildIndex(var.c_str());
+      TTreeIndex* index = (TTreeIndex*) myTree->GetTreeIndex();
+      //~~~~~~~~~~~~~~~~~~~~~~~~~
+      //for(int i=0; i < index->GetN(); i++){
+      int entries = myTree->GetEntries();
+      for(int i=0; i<entries; i++){
+	diff = 0;
+        pps_prev = pps_current; // copy over pps_current from previous event
+	myTree->GetEntry(i);
+        //Long64_t local = myTree->LoadTree( index->GetIndex()[i] );
+        //myTree->GetEntry(local);
 
-  }//end for var
+	if(LAPPD_ID != iLAPPD) continue;
+	if(ppsTime == 0) std::cout << "FOO A \n";
+  
+        // filter out "duplicates"
+        //      if( (ppsTime - pps_prev) < 2e7){
+  	//	pps_current = ppsTime;
+        //	continue;
+        //      }
+        
+        pps_current = ppsTime;
+        diff = pps_current - pps_prev;
+  
+        
+        if(var == "ppsTime0"){
+  	hDiff_vec[LAPPD_ID].first->Fill(diff);
+  	hDiff_vec_zoom[LAPPD_ID].first->Fill(diff - 3.2e8);
+  	hDiff_vec_zoom2[LAPPD_ID].first->Fill(diff);
+   	if(diff == 0) vCounts[LAPPD_ID].first.at(0)++;
+  	else if(diff == 3.2e8 || (diff+1) == 3.2e8 || (diff-1) == 3.2e8) vCounts[LAPPD_ID].first.at(1)++;
+  	else vCounts[LAPPD_ID].first.at(2)++;
+        }
+        else if(var == "ppsTime1"){
+  	hDiff_vec[LAPPD_ID].second->Fill(diff);
+  	hDiff_vec_zoom[LAPPD_ID].second->Fill(diff - 3.2e8);
+  	hDiff_vec_zoom2[LAPPD_ID].second->Fill(diff);
+  	if(diff == 0) vCounts[LAPPD_ID].second.at(0)++;
+  	else if(diff == 3.2e8 || (diff+1) == 3.2e8 || (diff-1) == 3.2e8) vCounts[LAPPD_ID].second.at(1)++;
+  	else vCounts[LAPPD_ID].second.at(2)++;
+        }
+        else{
+  	std::cout << "something wrong here \n";
+  	abort();
+        }
+        
+  
+  
+        
+        
+        if(diff > xHi || diff < xLo){
+        std::cout << pps_prev << " : " << pps_current << " : " << diff <<  "\n";
+        }      
+        
+      }// end loop over events
+  
+    }//end for var
+
+  }// end for(iLAPPD)
     
 
   for(int i=0; i<nLAPPD; i++){
