@@ -26,7 +26,8 @@ double xHi = 30e8;
 //  double yHi = 1e6;
 double yLo = 1e-6;
 double yHi = 10;
-
+//double yLo = 1e-1;
+//double yHi = 1e8;
 
 
 void DrawLines(){
@@ -34,7 +35,8 @@ void DrawLines(){
   int nLine = 9;
   for(int iLine=0; iLine<nLine; iLine++){
 
-    double xVal = (iLine+1)*3.2e8;
+    double interval = 3.2e8; // NB for anything other than a pure PPS run this interval is 10x longer
+    double xVal = (iLine+1)*interval; 
     TLine* line = new TLine(xVal, yLo, xVal, yHi);
     line->SetLineStyle(2);
     line->Draw("");
@@ -49,19 +51,6 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
 {
   TCanvas* c = new TCanvas("", "", 1300,600);
   //  c->SetLogy(true);
-
-
-  std::vector<std::pair<std::vector<Color_t>,std::vector<Color_t> > > vColor;
-  Color_t g = kGreen+2;
-  Color_t r = kRed;
-  Color_t b = kBlack;
-  vColor.push_back({ {r,g,r}, {r,g,r} });
-  vColor.push_back({ {r,g,r}, {r,g,r} });
-  vColor.push_back({ {r,g,r}, {r,g,r} });
-
-//  vColor.push_back({ {b,b,b}, {b,b,b} });
-//  vColor.push_back({ {b,b,b}, {b,b,b} });
-//  vColor.push_back({ {b,b,b}, {b,b,b} });
   
   
   c->Range(0.,0., 1.,1.);
@@ -100,15 +89,12 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
     text0_1->Draw("SAME");
     TLatex* text1_1 = new TLatex(textX,factor*16e-4, out1_1.str().c_str() );
     text1_1->SetTextSize(textSize);
-    text1_1->SetTextColor(vColor.at(i).first.at(0));
     text1_1->Draw("SAME");
     TLatex* text2_1 = new TLatex(textX,factor*4e-4, out2_1.str().c_str() );
     text2_1->SetTextSize(textSize);
-    text2_1->SetTextColor(vColor.at(i).first.at(1));
     text2_1->Draw("SAME");
     TLatex* text3_1 = new TLatex(textX,factor*1e-4, out3_1.str().c_str() );
     text3_1->SetTextSize(textSize);
-    text3_1->SetTextColor(vColor.at(i).first.at(2));
     text3_1->Draw("SAME");
     DrawLines();
     gPad->Update();
@@ -140,15 +126,12 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
     text0_2->Draw("SAME");
     TLatex* text1_2 = new TLatex(textX,factor*16e-4, out1_2.str().c_str() );
     text1_2->SetTextSize(textSize);
-    text1_2->SetTextColor(vColor.at(i).second.at(0));
     text1_2->Draw("SAME");
     TLatex* text2_2 = new TLatex(textX,factor*4e-4, out2_2.str().c_str() );
     text2_2->SetTextSize(textSize);
-    text2_2->SetTextColor(vColor.at(i).second.at(1));
     text2_2->Draw("SAME");
     TLatex* text3_2 = new TLatex(textX,factor*1e-4, out3_2.str().c_str() );
     text3_2->SetTextSize(textSize);
-    text3_2->SetTextColor(vColor.at(i).second.at(2));
     text3_2->Draw("SAME");
     DrawLines();
     gPad->Update();
@@ -158,60 +141,7 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
     st2->SetY1NDC(2.); 
     st2->SetY2NDC(2.); 
 
-    
-
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-
-//    TPad *pad = new TPad("pad", "pad", 0.2, 0.4, 0.4, 0.8);
-//    pad->Draw();
-//    pad->cd();
-//    // Create the table size (2 rows x 4 columns)
-//    const int nRows = 4;
-//    const int nCols = 2;    
-//    // Create a table and fill in the cells
-//    double cellWidth = 1.0 / nCols;
-//    double cellHeight = 1.0 / nRows;    
-//    for (int row = 0; row < nRows; ++row) {
-//        for (int col = 0; col < nCols; ++col) {
-//            double x1 = col * cellWidth;
-//            double y1 = 1 - (row + 1) * cellHeight;
-//            double x2 = (col + 1) * cellWidth;
-//            double y2 = 1 - row * cellHeight;            
-//            // Draw the box for the cell
-//            pad->cd();
-//            TBox *box = new TBox(x1, y1, x2, y2);
-//            box->SetFillStyle(0); // No fill
-//            box->Draw();
-//            // Add some text in the cell
-//            TString cellText = TString::Format("R%dC%d", row+1, col+1);
-//            TText *text = new TText((x1 + x2) / 2, (y1 + y2) / 2, cellText);
-//            text->SetTextAlign(22); // Center alignment
-//	    text->SetTextSize(textSize);
-//            text->Draw();
-//        }
-//    }
-//
-//    // Update the canvas to show the table
-//    c->Update();
-    
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-    
-//    c->cd(i+1+3);
-//    gPad->SetLogy(true);
-//    vHist[i].second->Draw(); 
-//    TLatex* text1_2 = new TLatex(-3e8,800,"foo");
-//    text1_2->SetTextSize(textSize);
-//    text1_2->Draw("SAME");
-//    TLatex* text2_2 = new TLatex(-3e8,200,"bar");
-//    text2_2->SetTextSize(textSize);
-//    text2_2->Draw("SAME");
-//    TLatex* text3_2 = new TLatex(-3e8,50,"#align{bar ; bar ; foobar}");
-//    text3_2->SetTextSize(textSize);
-//    text3_2->Draw("SAME");
   }
-
    
   // Update the canvas
   c->Update();
@@ -277,11 +207,9 @@ void PlotZoom(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname)
 
 void plot_missing()
 {
-  //  gStyle->SetOptStat(111110);
   gStyle->SetOptStat(1110);
-  //TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/4765/LAPPDTree.root");
-  //TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5007/LAPPDTree.root");
-  TFile *inFile = new TFile("~/mount/from_yue/ToolAnalysis/processed/5008/LAPPDTree.root");
+  TFile *inFile = new TFile("5081_LAPPDTree.root");
+
 
   TTree *myTree;
   myTree = (TTree*)inFile->Get("TimeStamp");
@@ -375,20 +303,12 @@ void plot_missing()
       Long64_t pps_current = 0; // pps timestamp from the current event 
   
       Long64_t diff = 0;
-  
-  
-      //~~~~~~~~~~~~~~~~~~~~~~~~~
-      myTree->BuildIndex(var.c_str());
-      TTreeIndex* index = (TTreeIndex*) myTree->GetTreeIndex();
-      //~~~~~~~~~~~~~~~~~~~~~~~~~
-      //for(int i=0; i < index->GetN(); i++){
+     
       int entries = myTree->GetEntries();
       for(int i=0; i<entries; i++){
 	diff = 0;
         pps_prev = pps_current; // copy over pps_current from previous event
 	myTree->GetEntry(i);
-        //Long64_t local = myTree->LoadTree( index->GetIndex()[i] );
-        //myTree->GetEntry(local);
 
 	if(LAPPD_ID != iLAPPD) continue;
 	if(ppsTime == 0) std::cout << "FOO A \n";
@@ -424,10 +344,7 @@ void plot_missing()
   	abort();
         }
         
-  
-  
-        
-        
+                
         if(diff > xHi || diff < xLo){
         std::cout << pps_prev << " : " << pps_current << " : " << diff <<  "\n";
         }      
