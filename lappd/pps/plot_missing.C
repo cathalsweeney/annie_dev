@@ -12,14 +12,19 @@
 int nLAPPD = 3;
 int nBins = 200;
 int prec = 3;
-double textX = -20e8;
+
 double textSize = 0.05;
 double factor = 100.;
 bool isLogY = true;
 
-double xLo = -22e8;
+//double xLo = -22e8;
+//double xHi = 20e8;
+double xLo = -22e9;
+double xHi = 20e9;
+
+//double xLo = -5e8;
+//double xHi = 10e10;
 //    Long64_t xHi = 7e8;
-double xHi = 30e8;
 //Long64_t xLo = -6e7;
 //Long64_t xHi = 5e7;
 //  double yLo = 5e-1;
@@ -30,12 +35,17 @@ double yHi = 10;
 //double yHi = 1e8;
 
 
+//double interval = 3.2e8; // NB for anything other than a pure PPS run this interval is 10x longer
+double interval = 3.2e9; 
+
+
+double textX = xLo*0.9;
+
 void DrawLines(){
 
   int nLine = 9;
   for(int iLine=0; iLine<nLine; iLine++){
 
-    double interval = 3.2e8; // NB for anything other than a pure PPS run this interval is 10x longer
     double xVal = (iLine+1)*interval; 
     TLine* line = new TLine(xVal, yLo, xVal, yHi);
     line->SetLineStyle(2);
@@ -80,7 +90,7 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
     std::ostringstream out1_1;
     out1_1 << "(#Delta t = 0) :          " << setprecision(prec) << (frac1_1*100) << "%";
     std::ostringstream out2_1;
-    out2_1 << "(#Delta t = 3.2e8#pm1) : " << setprecision(prec) << (frac2_1*100) << "%";
+    out2_1 << "(#Delta t = " << interval << "#pm1) : " << setprecision(prec) << (frac2_1*100) << "%";
     std::ostringstream out3_1;
     out3_1 << "Other :               " << setprecision(prec) << (frac3_1*100) << "%";
     vHist[i].first->Draw("HIST"); 
@@ -117,7 +127,7 @@ void PlotAll(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname,
     std::ostringstream out1_2;
     out1_2 << "(#Delta t = 0) :          " << setprecision(prec) << (frac1_2*100) << "%";
     std::ostringstream out2_2;
-    out2_2 << "(#Delta t = 3.2e8#pm1) : " << setprecision(prec) << (frac2_2*100) << "%";
+    out2_2 << "(#Delta t = " << interval << "#pm1) : " << setprecision(prec) << (frac2_2*100) << "%";
     std::ostringstream out3_2;
     out3_2 << "Other :               " << setprecision(prec) << (frac3_2*100) << "%";
     vHist[i].second->Draw("HIST"); 
@@ -208,7 +218,8 @@ void PlotZoom(std::vector<std::pair<TH1F*, TH1F*>> vHist, std::string outname)
 void plot_missing()
 {
   gStyle->SetOptStat(1110);
-  TFile *inFile = new TFile("5081_LAPPDTree.root");
+  //  TFile *inFile = new TFile("5081_LAPPDTree.root");
+  TFile *inFile = new TFile("../ana/files/tank/5119/LAPPDTree.root");
 
 
   TTree *myTree;
@@ -221,7 +232,7 @@ void plot_missing()
     std::string yLabel = "Events (normalised)";
 
 
-    std::string xLabel_zoom = "#Delta t_{pps} - 3.2e8 (clock ticks)";
+    std::string xLabel_zoom = "#Delta t_{pps} - " + std::to_string(interval) + " (clock ticks)";
     Long64_t xLo_zoom = -15;
     Long64_t xHi_zoom = 15;
     int nBins_zoom = xHi_zoom - xLo_zoom;
@@ -240,7 +251,7 @@ void plot_missing()
     int nBins_zoom2 = 100;
   
   std::vector<std::pair<TH1F*,TH1F*>> hDiff_vec; // pair of hists {acdc0, acdc1} for each LAPPD ID
-  std::vector<std::pair<TH1F*,TH1F*>> hDiff_vec_zoom; // same thing, but we subtract 3.2e8 (= 1s) from entries
+  std::vector<std::pair<TH1F*,TH1F*>> hDiff_vec_zoom; // same thing, but we subtract PPS interval (= 1s or 10s) from entries
   std::vector<std::pair<TH1F*,TH1F*>> hDiff_vec_zoom2; // zoom in on x=0 
   for(int i=0; i<nLAPPD; i++){
     TH1F *hACDC0  = new TH1F("", "", nBins, xLo, xHi);
@@ -278,7 +289,7 @@ void plot_missing()
     hDiff_vec_zoom2.push_back({hACDC0_zoom2, hACDC1_zoom2});
 
   }
-  std::vector<std::pair<std::vector<int>,std::vector<int> > > vCounts; // count number of events where delta_t is 0, 3.2e8, or other
+  std::vector<std::pair<std::vector<int>,std::vector<int> > > vCounts; // count number of events where delta_t is 0, pps interval, or other
   for(int i=0; i<nLAPPD; i++){
     std::pair<std::vector<int>,std::vector<int> > pair = { {0,0,0} , {0,0,0} };
     vCounts.push_back(pair);
@@ -320,23 +331,24 @@ void plot_missing()
         //      }
         
         pps_current = ppsTime;
+	//	if(pps_current > 20e12) continue;
         diff = pps_current - pps_prev;
   
         
         if(var == "ppsTime0"){
   	hDiff_vec[LAPPD_ID].first->Fill(diff);
-  	hDiff_vec_zoom[LAPPD_ID].first->Fill(diff - 3.2e8);
+  	hDiff_vec_zoom[LAPPD_ID].first->Fill(diff - interval);
   	hDiff_vec_zoom2[LAPPD_ID].first->Fill(diff);
    	if(diff == 0) vCounts[LAPPD_ID].first.at(0)++;
-  	else if(diff == 3.2e8 || (diff+1) == 3.2e8 || (diff-1) == 3.2e8) vCounts[LAPPD_ID].first.at(1)++;
+  	else if(diff == interval || (diff+1) == interval || (diff-1) == interval) vCounts[LAPPD_ID].first.at(1)++;
   	else vCounts[LAPPD_ID].first.at(2)++;
         }
         else if(var == "ppsTime1"){
   	hDiff_vec[LAPPD_ID].second->Fill(diff);
-  	hDiff_vec_zoom[LAPPD_ID].second->Fill(diff - 3.2e8);
+  	hDiff_vec_zoom[LAPPD_ID].second->Fill(diff - interval);
   	hDiff_vec_zoom2[LAPPD_ID].second->Fill(diff);
   	if(diff == 0) vCounts[LAPPD_ID].second.at(0)++;
-  	else if(diff == 3.2e8 || (diff+1) == 3.2e8 || (diff-1) == 3.2e8) vCounts[LAPPD_ID].second.at(1)++;
+  	else if(diff == interval || (diff+1) == interval || (diff-1) == interval) vCounts[LAPPD_ID].second.at(1)++;
   	else vCounts[LAPPD_ID].second.at(2)++;
         }
         else{
