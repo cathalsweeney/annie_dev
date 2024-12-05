@@ -232,7 +232,10 @@ void plot_missing()
     std::string yLabel = "Events (normalised)";
 
 
-    std::string xLabel_zoom = "#Delta t_{pps} - " + std::to_string(interval) + " (clock ticks)";
+    std::ostringstream xLabel_zoom;
+    xLabel_zoom << "#Delta t_{pps} - " << interval << " (clock ticks)" << setprecision(prec);
+    //std::string xLabel_zoom = "#Delta t_{pps} - " + std::to_string(interval) + " (clock ticks)";
+
     Long64_t xLo_zoom = -15;
     Long64_t xHi_zoom = 15;
     int nBins_zoom = xHi_zoom - xLo_zoom;
@@ -268,7 +271,7 @@ void plot_missing()
     TH1F *hACDC0_zoom  = new TH1F("", "", nBins_zoom, xLo_zoom, xHi_zoom);
     hACDC0_zoom->GetXaxis()->CenterTitle(true);
     hACDC0_zoom->GetYaxis()->CenterTitle(true);
-    hACDC0_zoom->GetXaxis()->SetTitle(xLabel_zoom.c_str());
+    hACDC0_zoom->GetXaxis()->SetTitle(xLabel_zoom.str().c_str());
     hACDC0_zoom->GetYaxis()->SetTitle(yLabel.c_str());
     hACDC0_zoom->GetYaxis()->SetRangeUser(yLo_zoom, yHi_zoom);    
     hACDC0_zoom->SetTitle("ACDC 0");
